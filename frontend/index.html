@@ -3234,7 +3234,207 @@ try {
                 `).join('')}
               </tbody>
             </table>
-          </body>
+          
+<!-- NEXUS DEVELOPMENT PREVIEW NOTICE -->
+<style id="nexus-dev-popup-style">
+  #nexus-dev-popup {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(2, 6, 8, 0.78);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  #nexus-dev-popup .dev-popup-card {
+    width: min(560px, 100%);
+    background:
+      linear-gradient(180deg, rgba(25, 32, 39, 0.98), rgba(12, 17, 21, 0.98));
+    border: 1px solid rgba(100, 255, 160, 0.18);
+    border-radius: 22px;
+    padding: 34px;
+    box-shadow:
+      0 35px 100px rgba(0,0,0,.65),
+      0 0 0 1px rgba(255,255,255,.025) inset;
+    text-align: center;
+    animation: nexusDevPopupIn .35s ease-out;
+  }
+
+  #nexus-dev-popup .dev-popup-logo {
+    width: 58px;
+    height: 58px;
+    margin: 0 auto 20px;
+    border-radius: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(72, 190, 112, .10);
+    border: 1px solid rgba(72, 190, 112, .20);
+    color: var(--green, #62d98a);
+    font-size: 27px;
+    font-weight: 800;
+  }
+
+  #nexus-dev-popup .dev-popup-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 11px;
+    margin-bottom: 16px;
+    border-radius: 999px;
+    background: rgba(72, 190, 112, .09);
+    border: 1px solid rgba(72, 190, 112, .16);
+    color: var(--green, #62d98a);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  #nexus-dev-popup .dev-popup-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 10px currentColor;
+  }
+
+  #nexus-dev-popup h2 {
+    margin: 0 0 12px;
+    color: var(--text, #f3f6f4);
+    font-size: 27px;
+    letter-spacing: -.025em;
+  }
+
+  #nexus-dev-popup p {
+    margin: 0 auto;
+    max-width: 440px;
+    color: var(--text-mid, #aeb8b2);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  #nexus-dev-popup .dev-popup-note {
+    margin-top: 18px;
+    padding: 13px 15px;
+    border-radius: 12px;
+    background: rgba(255,255,255,.035);
+    border: 1px solid rgba(255,255,255,.06);
+    color: var(--text-mid, #aeb8b2);
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  #nexus-dev-popup .dev-popup-actions {
+    margin-top: 25px;
+    display: flex;
+    justify-content: center;
+  }
+
+  #nexus-dev-popup .dev-popup-continue {
+    min-width: 190px;
+    border: 0;
+    border-radius: 10px;
+    padding: 12px 20px;
+    cursor: pointer;
+    background: var(--green, #62d98a);
+    color: #07100b;
+    font-size: 13px;
+    font-weight: 750;
+    transition: transform .18s ease, filter .18s ease;
+  }
+
+  #nexus-dev-popup .dev-popup-continue:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
+
+  @keyframes nexusDevPopupIn {
+    from {
+      opacity: 0;
+      transform: translateY(12px) scale(.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @media (max-width: 600px) {
+    #nexus-dev-popup .dev-popup-card {
+      padding: 27px 21px;
+      border-radius: 18px;
+    }
+
+    #nexus-dev-popup h2 {
+      font-size: 23px;
+    }
+  }
+</style>
+
+<div id="nexus-dev-popup" role="dialog" aria-modal="true" aria-labelledby="nexus-dev-popup-title">
+  <div class="dev-popup-card">
+
+    <div class="dev-popup-logo">N</div>
+
+    <div class="dev-popup-badge">
+      <span class="dev-popup-dot"></span>
+      Development Preview
+    </div>
+
+    <h2 id="nexus-dev-popup-title">NEXUS is currently under development</h2>
+
+    <p>
+      NEXUS is actively being built and is not ready for production use yet.
+      Some features may be incomplete, unavailable, or change during development.
+    </p>
+
+    <div class="dev-popup-note">
+      You are viewing an early development preview of NEXUS.
+      Data and functionality may change as the platform evolves.
+    </div>
+
+    <div class="dev-popup-actions">
+      <button type="button" class="dev-popup-continue" id="nexus-dev-popup-continue">
+        Continue to Preview
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script id="nexus-development-popup-script">
+(function(){
+  const popup = document.getElementById('nexus-dev-popup');
+  const continueBtn = document.getElementById('nexus-dev-popup-continue');
+
+  if(!popup || !continueBtn) return;
+
+  function closeDevelopmentPopup(){
+    popup.style.opacity = '0';
+    popup.style.transition = 'opacity .2s ease';
+
+    setTimeout(function(){
+      popup.remove();
+    }, 200);
+  }
+
+  continueBtn.addEventListener('click', closeDevelopmentPopup);
+
+  // Do not allow accidental dismissal by clicking outside.
+  popup.addEventListener('click', function(e){
+    e.stopPropagation();
+  });
+
+  // ESC intentionally does nothing.
+})();
+</script>
+
+</body>
           </html>
         `);
 
