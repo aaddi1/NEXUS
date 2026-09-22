@@ -109,12 +109,10 @@ router.post('/transfer', async (req, res) => {
   const client = await pool.connect();
 
   try {
-    const {
-      product_id,
-      from_warehouse,
-      to_warehouse,
-      quantity
-    } = req.body;
+    const product_id = req.body.product_id;
+    const from_warehouse = req.body.from_warehouse || req.body.from;
+    const to_warehouse = req.body.to_warehouse || req.body.to;
+    const quantity = req.body.quantity;
 
     if (
       !product_id ||
@@ -184,6 +182,21 @@ router.post('/transfer', async (req, res) => {
       [product_id, to_warehouse, Number(quantity)]
     );
 
+    // Record movement in inventory_movements ledger
+    const actorId = req.user ? req.user.id : null;
+    await client.query(
+      `INSERT INTO inventory_movements
+       (product_id, warehouse, quantity_change, movement_type, reference_type, actor_id, notes)
+       VALUES ($1, $2, $3, 'transfer_out', 'transfer', $4, $5)`,
+      [product_id, from_warehouse, -Number(quantity), actorId, `Transfer to ${to_warehouse}`]
+    );
+    await client.query(
+      `INSERT INTO inventory_movements
+       (product_id, warehouse, quantity_change, movement_type, reference_type, actor_id, notes)
+       VALUES ($1, $2, $3, 'transfer_in', 'transfer', $4, $5)`,
+      [product_id, to_warehouse, Number(quantity), actorId, `Transfer from ${from_warehouse}`]
+    );
+
     await client.query('COMMIT');
 
     res.json({
@@ -192,7 +205,7 @@ router.post('/transfer', async (req, res) => {
     });
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error(error);
+    console.error('Transfer stock error:', error);
 
     res.status(500).json({
       success: false,

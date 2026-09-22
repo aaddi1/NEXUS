@@ -1,5 +1,15 @@
+CREATE TABLE organizations (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    slug VARCHAR(100) UNIQUE NOT NULL,
+    plan VARCHAR(50) DEFAULT 'enterprise',
+    owner_id INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
+    organization_id INTEGER REFERENCES organizations(id),
     name VARCHAR(100) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
@@ -14,8 +24,20 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE auth_identities (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    provider VARCHAR(50) NOT NULL,
+    provider_user_id VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    profile_data JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(provider, provider_user_id)
+);
+
 CREATE TABLE customers (
     id SERIAL PRIMARY KEY,
+    organization_id INTEGER REFERENCES organizations(id),
     name VARCHAR(150) NOT NULL,
     email VARCHAR(255),
     phone VARCHAR(30),
@@ -27,12 +49,14 @@ CREATE TABLE customers (
 
 CREATE TABLE categories (
     id SERIAL PRIMARY KEY,
+    organization_id INTEGER REFERENCES organizations(id),
     name VARCHAR(100) UNIQUE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE products (
     id SERIAL PRIMARY KEY,
+    organization_id INTEGER REFERENCES organizations(id),
     name VARCHAR(150) NOT NULL,
     sku VARCHAR(100) UNIQUE NOT NULL,
     category_id INTEGER REFERENCES categories(id),
@@ -43,6 +67,7 @@ CREATE TABLE products (
 
 CREATE TABLE inventory (
     id SERIAL PRIMARY KEY,
+    organization_id INTEGER REFERENCES organizations(id),
     product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
     warehouse VARCHAR(100) NOT NULL,
     quantity INTEGER NOT NULL DEFAULT 0,
@@ -52,6 +77,7 @@ CREATE TABLE inventory (
 
 CREATE TABLE inventory_movements (
     id SERIAL PRIMARY KEY,
+    organization_id INTEGER REFERENCES organizations(id),
     product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
     warehouse VARCHAR(100) NOT NULL,
     quantity_change INTEGER NOT NULL,
@@ -65,6 +91,7 @@ CREATE TABLE inventory_movements (
 
 CREATE TABLE orders (
     id SERIAL PRIMARY KEY,
+    organization_id INTEGER REFERENCES organizations(id),
     customer_id INTEGER REFERENCES customers(id),
     employee_id INTEGER REFERENCES users(id),
     status VARCHAR(50) DEFAULT 'pending',
@@ -91,6 +118,7 @@ CREATE TABLE order_items (
 
 CREATE TABLE invoices (
     id SERIAL PRIMARY KEY,
+    organization_id INTEGER REFERENCES organizations(id),
     customer_id INTEGER REFERENCES customers(id),
     invoice_number VARCHAR(50) UNIQUE NOT NULL,
     status VARCHAR(50) DEFAULT 'draft',
@@ -103,8 +131,6 @@ CREATE TABLE invoices (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE SEQUENCE IF NOT EXISTS nexus_invoice_seq START WITH 1000;
-
 CREATE TABLE invoice_items (
     id SERIAL PRIMARY KEY,
     invoice_id INTEGER REFERENCES invoices(id) ON DELETE CASCADE,
@@ -116,6 +142,7 @@ CREATE TABLE invoice_items (
 
 CREATE TABLE payments (
     id SERIAL PRIMARY KEY,
+    organization_id INTEGER REFERENCES organizations(id),
     invoice_id INTEGER REFERENCES invoices(id),
     amount NUMERIC(12,2) NOT NULL,
     payment_method VARCHAR(50),
@@ -125,6 +152,7 @@ CREATE TABLE payments (
 
 CREATE TABLE deals (
     id SERIAL PRIMARY KEY,
+    organization_id INTEGER REFERENCES organizations(id),
     customer_id INTEGER REFERENCES customers(id),
     employee_id INTEGER REFERENCES users(id),
     name VARCHAR(150) NOT NULL,
@@ -136,6 +164,7 @@ CREATE TABLE deals (
 
 CREATE TABLE complaints (
     id SERIAL PRIMARY KEY,
+    organization_id INTEGER REFERENCES organizations(id),
     user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
     user_name VARCHAR(150) NOT NULL,
     user_email VARCHAR(255) NOT NULL,

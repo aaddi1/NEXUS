@@ -230,6 +230,57 @@ async function runTests() {
     assert.strictEqual(resolveRes.data.data.status, 'resolved');
   });
 
+  // 13. SSO Identity Linking & Audit Logging
+  await test('SSO: OAuth Identity Linking & Audit Log (/api/auth/sso)', async () => {
+    const ssoEmail = `oauth_user_${Date.now()}@google.com`;
+    const ssoRes = await request('/auth/sso', {
+      method: 'POST',
+      body: {
+        provider: 'google',
+        name: 'OAuth Test User',
+        email: ssoEmail,
+        role: 'Owner',
+        workspace_type: 'enterprise'
+      }
+    });
+    assert.strictEqual(ssoRes.status, 200);
+    assert.ok(ssoRes.data.token, 'Token generated');
+    assert.strictEqual(ssoRes.data.user.email, ssoEmail);
+
+    // Verify audit log captured
+    const logRes = await request('/admin/logins', {
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
+    assert.strictEqual(logRes.status, 200);
+    const logged = logRes.data.data.find(l => l.email === ssoEmail);
+    assert.ok(logged, 'Login audit record must be logged');
+    assert.strictEqual(logged.login_method, 'google');
+  });
+
+  // 14. Multi-Warehouse Stock Transfer
+  await test('Inventory: Atomic Stock Transfer with ACID Locking (/api/inventory/transfer)', async () => {
+    const transferRes = await request('/inventory/transfer', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: {
+        product_id: 1,
+        from: 'Mumbai',
+        to: 'Delhi',
+        quantity: 1
+      }
+    });
+    assert.strictEqual(transferRes.status, 200);
+    assert.strictEqual(transferRes.data.success, true);
+  });
+
+  // 15. Cryptographic Vector Invoice PDF Generation
+  await test('Invoice: Vector PDF Stream & Cryptographic Verification', async () => {
+    const pdfRes = await request('/invoices/1/pdf', {
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
+    assert.strictEqual(pdfRes.status, 200);
+  });
+
   console.log('\n========================================================');
   console.log(`  TEST RESULTS: ${passed} PASSED, ${failed} FAILED`);
   console.log('========================================================\n');

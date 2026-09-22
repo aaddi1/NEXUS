@@ -265,13 +265,13 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-// SSO LOGIN / REGISTRATION (Google, GitHub, Microsoft)
+// SSO LOGIN / REGISTRATION (Google, GitHub, Microsoft) WITH IDENTITY LINKING
 router.post('/sso', async (req, res) => {
   const ip = getClientIp(req);
   const ua = getUserAgent(req);
 
   try {
-    const { provider = 'SSO', email, name, role = 'Owner', workspace_type = 'enterprise' } = req.body;
+    const { provider = 'google', email, name, provider_user_id, role = 'Owner', workspace_type = 'enterprise' } = req.body;
 
     if (!email || !name) {
       return res.status(400).json({
@@ -282,40 +282,73 @@ router.post('/sso', async (req, res) => {
 
     const cleanEmail = email.trim().toLowerCase();
     const cleanName = name.trim();
+    const cleanProvider = provider.trim().toLowerCase();
+    const provUserId = provider_user_id || `${cleanProvider}_${cleanEmail}`;
 
-    let user = await pool.query(
-      'SELECT id, name, email, role, workspace_type, is_active, company_name FROM users WHERE LOWER(email) = $1',
-      [cleanEmail]
+    // Step 1: Check if OAuth Identity already mapped
+    const identityRes = await pool.query(
+      `SELECT ai.user_id, u.id, u.name, u.email, u.role, u.workspace_type, u.company_name, u.is_active
+       FROM auth_identities ai
+       JOIN users u ON u.id = ai.user_id
+       WHERE ai.provider = $1 AND ai.provider_user_id = $2`,
+      [cleanProvider, provUserId]
     );
 
-    if (user.rows.length === 0) {
-      const dummySalt = await bcrypt.genSalt(10);
-      const dummyHash = await bcrypt.hash('sso_authenticated_user_nexus_2026', dummySalt);
+    let user;
 
-      const inserted = await pool.query(
-        `INSERT INTO users (name, email, password_hash, role, workspace_type, is_active)
-         VALUES ($1, $2, $3, $4, $5, TRUE)
-         RETURNING id, name, email, role, workspace_type, company_name, is_active, created_at`,
-        [cleanName, cleanEmail, dummyHash, role, workspace_type]
+    if (identityRes.rows.length > 0) {
+      user = identityRes.rows[0];
+    } else {
+      // Step 2: Check if local user exists by email
+      const existingUserRes = await pool.query(
+        'SELECT id, name, email, role, workspace_type, company_name, is_active FROM users WHERE LOWER(email) = $1',
+        [cleanEmail]
       );
-      user = inserted;
+
+      if (existingUserRes.rows.length > 0) {
+        user = existingUserRes.rows[0];
+      } else {
+        // Step 3: Provision new user
+        const dummySalt = await bcrypt.genSalt(10);
+        const dummyHash = await bcrypt.hash('sso_authenticated_user_nexus_2026', dummySalt);
+
+        // Normalize safe roles
+        let safeRole = role.trim();
+        let safeWorkspace = workspace_type.trim();
+        if (safeRole.toLowerCase() === 'superadmin') safeRole = 'Owner';
+        if (safeWorkspace.toLowerCase() === 'system') safeWorkspace = 'enterprise';
+
+        const inserted = await pool.query(
+          `INSERT INTO users (name, email, password_hash, role, workspace_type, is_active)
+           VALUES ($1, $2, $3, $4, $5, TRUE)
+           RETURNING id, name, email, role, workspace_type, company_name, is_active, created_at`,
+          [cleanName, cleanEmail, dummyHash, safeRole, safeWorkspace]
+        );
+        user = inserted.rows[0];
+      }
+
+      // Link identity
+      await pool.query(
+        `INSERT INTO auth_identities (user_id, provider, provider_user_id, email, profile_data)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (provider, provider_user_id) DO NOTHING`,
+        [user.id, cleanProvider, provUserId, cleanEmail, JSON.stringify({ name: cleanName, provider: cleanProvider })]
+      );
     }
 
-    const userData = user.rows[0];
-
-    if (userData.is_active === false) {
-      await logUserLogin(userData.id, cleanEmail, provider.toLowerCase(), ip, ua, 'blocked_suspended');
+    if (user.is_active === false) {
+      await logUserLogin(user.id, cleanEmail, cleanProvider, ip, ua, 'blocked_suspended');
       return res.status(403).json({
         success: false,
         message: 'Your account has been deactivated/suspended. Please contact Super Admin Aryan Sharma.'
       });
     }
 
-    await pool.query('UPDATE users SET last_accessed = CURRENT_TIMESTAMP WHERE id = $1', [userData.id]);
-    await logUserLogin(userData.id, cleanEmail, provider.toLowerCase(), ip, ua, 'success');
+    await pool.query('UPDATE users SET last_accessed = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
+    await logUserLogin(user.id, cleanEmail, cleanProvider, ip, ua, 'success');
 
     const token = jwt.sign(
-      { id: userData.id, email: userData.email, role: userData.role, workspace_type: userData.workspace_type },
+      { id: user.id, email: user.email, role: user.role, workspace_type: user.workspace_type },
       JWT_SECRET,
       { expiresIn: '30d' }
     );
@@ -324,7 +357,15 @@ router.post('/sso', async (req, res) => {
       success: true,
       message: `Signed in via ${provider}`,
       token,
-      user: userData
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        workspace_type: user.workspace_type,
+        company_name: user.company_name,
+        is_active: user.is_active
+      }
     });
   } catch (error) {
     console.error('SSO backend error:', error);
