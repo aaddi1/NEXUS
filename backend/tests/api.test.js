@@ -281,6 +281,57 @@ async function runTests() {
     assert.strictEqual(pdfRes.status, 200);
   });
 
+  // 16. Two-Factor Authentication (Google Authenticator TOTP Lifecycle)
+  await test('Security: Google Authenticator TOTP 2FA Setup, Activation & Verification', async () => {
+    const { generateTOTP } = require('../src/utils/totp');
+
+    // Step A: Setup
+    const setupRes = await request('/auth/2fa/setup', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
+    assert.strictEqual(setupRes.status, 200);
+    assert.ok(setupRes.data.secret, 'Base32 secret generated');
+    assert.ok(setupRes.data.qr_code_data_url, 'QR code generated');
+    const secret = setupRes.data.secret;
+
+    // Step B: Confirm & Activate
+    const validCode = generateTOTP(secret);
+    const verifyRes = await request('/auth/2fa/verify-setup', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: { secret, code: validCode, backup_codes: setupRes.data.backup_codes }
+    });
+    assert.strictEqual(verifyRes.status, 200);
+    assert.strictEqual(verifyRes.data.success, true);
+
+    // Step C: Login Challenge Triggered
+    const loginRes = await request('/auth/login', {
+      method: 'POST',
+      body: { email: 'aryan@nexus.com', password: 'aryan123' }
+    });
+    assert.strictEqual(loginRes.status, 200);
+    assert.strictEqual(loginRes.data.mfa_required, true, 'Must require 2FA challenge');
+    assert.ok(loginRes.data.mfa_token, 'MFA challenge token issued');
+
+    // Step D: Verify 2FA Login
+    const currentCode = generateTOTP(secret);
+    const mfaVerifyRes = await request('/auth/2fa/verify-login', {
+      method: 'POST',
+      body: { mfa_token: loginRes.data.mfa_token, code: currentCode }
+    });
+    assert.strictEqual(mfaVerifyRes.status, 200);
+    assert.ok(mfaVerifyRes.data.token, 'Full session token issued after 2FA');
+
+    // Step E: Disable 2FA
+    const disableRes = await request('/auth/2fa/disable', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${mfaVerifyRes.data.token}` },
+      body: { code: generateTOTP(secret) }
+    });
+    assert.strictEqual(disableRes.status, 200);
+  });
+
   console.log('\n========================================================');
   console.log(`  TEST RESULTS: ${passed} PASSED, ${failed} FAILED`);
   console.log('========================================================\n');

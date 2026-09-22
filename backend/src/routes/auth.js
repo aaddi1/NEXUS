@@ -1,7 +1,16 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const pool = require('../db/database');
+const {
+  generateSecret,
+  verifyTOTP,
+  generateOtpAuthUri,
+  generateQrCodeDataUrl,
+  generateBackupCodes
+} = require('../utils/totp');
+const { authenticateToken } = require('../middleware');
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'nexus-development-secret';
@@ -28,7 +37,7 @@ async function logUserLogin(userId, email, method, ip, ua, status) {
   }
 }
 
-// LOGIN
+// 1. LOGIN (PASSWORD)
 router.post('/login', async (req, res) => {
   const ip = getClientIp(req);
   const ua = getUserAgent(req);
@@ -46,7 +55,7 @@ router.post('/login', async (req, res) => {
     const cleanEmail = email.trim().toLowerCase();
 
     const result = await pool.query(
-      `SELECT id, name, email, password_hash, role, workspace_type, is_active, company_name
+      `SELECT id, name, email, password_hash, role, workspace_type, is_active, company_name, two_factor_enabled, two_factor_secret
        FROM users
        WHERE LOWER(email) = $1`,
       [cleanEmail]
@@ -70,10 +79,7 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    const validPassword = await bcrypt.compare(
-      password,
-      user.password_hash
-    );
+    const validPassword = await bcrypt.compare(password, user.password_hash);
 
     if (!validPassword) {
       await logUserLogin(user.id, cleanEmail, 'password', ip, ua, 'failed_wrong_password');
@@ -83,7 +89,25 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Update last accessed
+    // Check if Two-Factor Authentication is Enabled
+    if (user.two_factor_enabled && user.two_factor_secret) {
+      const mfaToken = jwt.sign(
+        { id: user.id, email: user.email, mfa_pending: true },
+        JWT_SECRET,
+        { expiresIn: '5m' }
+      );
+
+      return res.json({
+        success: true,
+        mfa_required: true,
+        mfa_token: mfaToken,
+        email: user.email,
+        name: user.name,
+        message: 'Google Authenticator 2FA code required'
+      });
+    }
+
+    // Standard Login
     await pool.query('UPDATE users SET last_accessed = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
     await logUserLogin(user.id, cleanEmail, 'password', ip, ua, 'success');
 
@@ -109,7 +133,8 @@ router.post('/login', async (req, res) => {
         role: user.role,
         workspace_type: user.workspace_type,
         company_name: user.company_name,
-        is_active: user.is_active
+        is_active: user.is_active,
+        two_factor_enabled: user.two_factor_enabled || false
       }
     });
   } catch (error) {
@@ -121,7 +146,224 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// REGISTER
+// 2. 2FA VERIFY LOGIN CODE (Google Authenticator / Backup Code)
+router.post('/2fa/verify-login', async (req, res) => {
+  const ip = getClientIp(req);
+  const ua = getUserAgent(req);
+
+  try {
+    const { mfa_token, code } = req.body;
+
+    if (!mfa_token || !code) {
+      return res.status(400).json({
+        success: false,
+        message: 'MFA token and verification code are required'
+      });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(mfa_token, JWT_SECRET);
+    } catch {
+      return res.status(401).json({
+        success: false,
+        message: 'MFA session expired. Please sign in again.'
+      });
+    }
+
+    if (!decoded.mfa_pending) {
+      return res.status(401).json({ success: false, message: 'Invalid MFA session' });
+    }
+
+    const userRes = await pool.query(
+      `SELECT id, name, email, role, workspace_type, is_active, company_name, two_factor_secret, two_factor_backup_codes
+       FROM users
+       WHERE id = $1`,
+      [decoded.id]
+    );
+
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const user = userRes.rows[0];
+    const cleanedCode = String(code).trim().toUpperCase();
+
+    // Verify via TOTP Algorithm
+    let isTotpValid = verifyTOTP(user.two_factor_secret, cleanedCode, 1);
+    let usedBackupCode = false;
+
+    // Check backup codes if TOTP doesn't match
+    if (!isTotpValid && Array.isArray(user.two_factor_backup_codes)) {
+      const idx = user.two_factor_backup_codes.indexOf(cleanedCode);
+      if (idx !== -1) {
+        isTotpValid = true;
+        usedBackupCode = true;
+        // Consume backup code
+        user.two_factor_backup_codes.splice(idx, 1);
+        await pool.query('UPDATE users SET two_factor_backup_codes = $1 WHERE id = $2', [
+          JSON.stringify(user.two_factor_backup_codes),
+          user.id
+        ]);
+      }
+    }
+
+    if (!isTotpValid) {
+      await logUserLogin(user.id, user.email, '2fa_totp', ip, ua, 'failed_invalid_code');
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid 6-digit Google Authenticator code or backup code'
+      });
+    }
+
+    // Successful 2FA verification
+    await pool.query('UPDATE users SET last_accessed = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
+    await logUserLogin(user.id, user.email, usedBackupCode ? '2fa_backup_code' : '2fa_totp', ip, ua, 'success');
+
+    const token = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        workspace_type: user.workspace_type
+      },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    res.json({
+      success: true,
+      message: 'Two-factor authentication verified',
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        workspace_type: user.workspace_type,
+        company_name: user.company_name,
+        is_active: user.is_active,
+        two_factor_enabled: true
+      }
+    });
+  } catch (error) {
+    console.error('2FA verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to verify 2FA code'
+    });
+  }
+});
+
+// 3. 2FA SETUP (GENERATE SECRET & QR CODE)
+router.post('/2fa/setup', authenticateToken, async (req, res) => {
+  try {
+    const userRes = await pool.query('SELECT email FROM users WHERE id = $1', [req.user.id]);
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const secret = generateSecret(20);
+    const otpAuthUri = generateOtpAuthUri(userRes.rows[0].email, secret, 'NEXUS');
+    const qrCodeDataUrl = await generateQrCodeDataUrl(otpAuthUri);
+    const backupCodes = generateBackupCodes(6);
+
+    res.json({
+      success: true,
+      secret,
+      otpauth_uri: otpAuthUri,
+      qr_code_data_url: qrCodeDataUrl,
+      backup_codes: backupCodes
+    });
+  } catch (error) {
+    console.error('2FA setup error:', error);
+    res.status(500).json({ success: false, message: 'Failed to initiate 2FA setup' });
+  }
+});
+
+// 4. 2FA CONFIRM & ACTIVATE SETUP
+router.post('/2fa/verify-setup', authenticateToken, async (req, res) => {
+  try {
+    const { secret, code, backup_codes } = req.body;
+
+    if (!secret || !code) {
+      return res.status(400).json({ success: false, message: 'Secret and verification code are required' });
+    }
+
+    const isValid = verifyTOTP(secret, String(code).trim(), 1);
+
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid verification code. Please check Google Authenticator and try again.'
+      });
+    }
+
+    await pool.query(
+      `UPDATE users
+       SET two_factor_enabled = TRUE,
+           two_factor_secret = $1,
+           two_factor_backup_codes = $2
+       WHERE id = $3`,
+      [secret, JSON.stringify(backup_codes || []), req.user.id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Google Authenticator 2FA successfully activated on your account!'
+    });
+  } catch (error) {
+    console.error('2FA verify setup error:', error);
+    res.status(500).json({ success: false, message: 'Failed to activate 2FA' });
+  }
+});
+
+// 5. 2FA DISABLE
+router.post('/2fa/disable', authenticateToken, async (req, res) => {
+  try {
+    const { password, code } = req.body;
+
+    const userRes = await pool.query('SELECT password_hash, two_factor_secret FROM users WHERE id = $1', [req.user.id]);
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const user = userRes.rows[0];
+
+    if (password) {
+      const validPw = await bcrypt.compare(password, user.password_hash);
+      if (!validPw) {
+        return res.status(401).json({ success: false, message: 'Invalid password' });
+      }
+    } else if (code) {
+      const validTotp = verifyTOTP(user.two_factor_secret, code, 1);
+      if (!validTotp) {
+        return res.status(401).json({ success: false, message: 'Invalid 2FA code' });
+      }
+    } else {
+      return res.status(400).json({ success: false, message: 'Password or 2FA code required to disable 2FA' });
+    }
+
+    await pool.query(
+      `UPDATE users
+       SET two_factor_enabled = FALSE,
+           two_factor_secret = NULL,
+           two_factor_backup_codes = '[]'::jsonb
+       WHERE id = $1`,
+      [req.user.id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Two-factor authentication has been disabled.'
+    });
+  } catch (error) {
+    console.error('2FA disable error:', error);
+    res.status(500).json({ success: false, message: 'Failed to disable 2FA' });
+  }
+});
+
+// 6. REGISTER
 router.post('/register', async (req, res) => {
   const ip = getClientIp(req);
   const ua = getUserAgent(req);
@@ -139,7 +381,6 @@ router.post('/register', async (req, res) => {
     const cleanEmail = email.trim().toLowerCase();
     const cleanName = name.trim();
 
-    // Prevent privilege escalation on public registration
     let safeRole = role.trim();
     let safeWorkspace = workspace_type.trim();
     if (safeRole.toLowerCase() === 'superadmin') safeRole = 'Owner';
@@ -187,7 +428,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// FORGOT PASSWORD REQUEST
+// 7. FORGOT PASSWORD REQUEST
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
@@ -197,7 +438,6 @@ router.post('/forgot-password', async (req, res) => {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const crypto = require('crypto');
     const resetToken = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 3600000); // 1 hour
 
@@ -210,7 +450,6 @@ router.post('/forgot-password', async (req, res) => {
       [resetToken, expires, cleanEmail]
     );
 
-    // Return generic message regardless of email existence for security
     res.json({
       success: true,
       message: 'If an account exists with this email, password reset instructions have been generated.',
@@ -222,7 +461,7 @@ router.post('/forgot-password', async (req, res) => {
   }
 });
 
-// RESET PASSWORD SUBMIT
+// 8. RESET PASSWORD SUBMIT
 router.post('/reset-password', async (req, res) => {
   try {
     const { token, new_password } = req.body;
@@ -265,7 +504,7 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-// SSO LOGIN / REGISTRATION (Google, GitHub, Microsoft) WITH IDENTITY LINKING
+// 9. SSO LOGIN / REGISTRATION WITH IDENTITY LINKING
 router.post('/sso', async (req, res) => {
   const ip = getClientIp(req);
   const ua = getUserAgent(req);
@@ -285,9 +524,8 @@ router.post('/sso', async (req, res) => {
     const cleanProvider = provider.trim().toLowerCase();
     const provUserId = provider_user_id || `${cleanProvider}_${cleanEmail}`;
 
-    // Step 1: Check if OAuth Identity already mapped
     const identityRes = await pool.query(
-      `SELECT ai.user_id, u.id, u.name, u.email, u.role, u.workspace_type, u.company_name, u.is_active
+      `SELECT ai.user_id, u.id, u.name, u.email, u.role, u.workspace_type, u.company_name, u.is_active, u.two_factor_enabled, u.two_factor_secret
        FROM auth_identities ai
        JOIN users u ON u.id = ai.user_id
        WHERE ai.provider = $1 AND ai.provider_user_id = $2`,
@@ -299,20 +537,17 @@ router.post('/sso', async (req, res) => {
     if (identityRes.rows.length > 0) {
       user = identityRes.rows[0];
     } else {
-      // Step 2: Check if local user exists by email
       const existingUserRes = await pool.query(
-        'SELECT id, name, email, role, workspace_type, company_name, is_active FROM users WHERE LOWER(email) = $1',
+        'SELECT id, name, email, role, workspace_type, company_name, is_active, two_factor_enabled, two_factor_secret FROM users WHERE LOWER(email) = $1',
         [cleanEmail]
       );
 
       if (existingUserRes.rows.length > 0) {
         user = existingUserRes.rows[0];
       } else {
-        // Step 3: Provision new user
         const dummySalt = await bcrypt.genSalt(10);
         const dummyHash = await bcrypt.hash('sso_authenticated_user_nexus_2026', dummySalt);
 
-        // Normalize safe roles
         let safeRole = role.trim();
         let safeWorkspace = workspace_type.trim();
         if (safeRole.toLowerCase() === 'superadmin') safeRole = 'Owner';
@@ -327,7 +562,6 @@ router.post('/sso', async (req, res) => {
         user = inserted.rows[0];
       }
 
-      // Link identity
       await pool.query(
         `INSERT INTO auth_identities (user_id, provider, provider_user_id, email, profile_data)
          VALUES ($1, $2, $3, $4, $5)
@@ -341,6 +575,24 @@ router.post('/sso', async (req, res) => {
       return res.status(403).json({
         success: false,
         message: 'Your account has been deactivated/suspended. Please contact Super Admin Aryan Sharma.'
+      });
+    }
+
+    // Check if Two-Factor Authentication is Enabled
+    if (user.two_factor_enabled && user.two_factor_secret) {
+      const mfaToken = jwt.sign(
+        { id: user.id, email: user.email, mfa_pending: true },
+        JWT_SECRET,
+        { expiresIn: '5m' }
+      );
+
+      return res.json({
+        success: true,
+        mfa_required: true,
+        mfa_token: mfaToken,
+        email: user.email,
+        name: user.name,
+        message: 'Google Authenticator 2FA code required for OAuth account'
       });
     }
 
@@ -364,7 +616,8 @@ router.post('/sso', async (req, res) => {
         role: user.role,
         workspace_type: user.workspace_type,
         company_name: user.company_name,
-        is_active: user.is_active
+        is_active: user.is_active,
+        two_factor_enabled: user.two_factor_enabled || false
       }
     });
   } catch (error) {
@@ -376,7 +629,7 @@ router.post('/sso', async (req, res) => {
   }
 });
 
-// GET CURRENT AUTH USER
+// 10. GET CURRENT AUTH USER
 router.get('/me', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -388,7 +641,7 @@ router.get('/me', async (req, res) => {
     const decoded = jwt.verify(token, JWT_SECRET);
 
     const result = await pool.query(
-      'SELECT id, name, email, role, workspace_type, is_active, company_name, created_at FROM users WHERE id = $1',
+      'SELECT id, name, email, role, workspace_type, is_active, company_name, two_factor_enabled, created_at FROM users WHERE id = $1',
       [decoded.id]
     );
 

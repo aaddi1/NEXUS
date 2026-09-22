@@ -362,6 +362,7 @@
       <div class="tabs-row" id="settings-tabs">
         <div class="tab-btn active" data-tab="profile">Profile</div>
         <div class="tab-btn" data-tab="company">Company</div>
+        <div class="tab-btn" data-tab="security">Security & 2FA</div>
         <div class="tab-btn" data-tab="notifications">Notifications</div>
         <div class="tab-btn" data-tab="billing">Billing</div>
         <div class="tab-btn" data-tab="team">Team</div>
@@ -371,13 +372,32 @@
         <div class="panel settings-panel">
           <div class="avatar-upload"><div class="big-av">OA</div><div><button class="btn btn-ghost btn-sm">Upload photo</button><div style="font-size:12px;color:var(--text-low);margin-top:6px;">JPG or PNG, up to 4MB</div></div></div>
           <div class="settings-grid">
-            <div class="field"><label>Full name</label><input value="Aryan Sharma"></div>
-            <div class="field"><label>Role</label><input value="Founder & Operations" disabled style="opacity:.6;"></div>
-            <div class="field"><label>Email</label><input value="aryan@nexus.com"></div>
-            <div class="field"><label>Phone</label><input value="+91 98765 43210"></div>
-            <div class="field full"><label>Time zone</label><select><option>(GMT-05:00) Eastern Time</option><option>(GMT+00:00) London</option><option>(GMT+05:30) Chennai, Kolkata</option></select></div>
+            <div class="field"><label>Full name</label><input id="set-name" value="Aryan Sharma"></div>
+            <div class="field"><label>Role</label><input id="set-role" value="Founder & Operations" disabled style="opacity:.6;"></div>
+            <div class="field"><label>Email</label><input id="set-email" value="aryan@nexus.com"></div>
+            <div class="field"><label>Phone</label><input id="set-phone" value="+91 98765 43210"></div>
+            <div class="field full"><label>Time zone</label><select><option>(GMT+05:30) Chennai, Kolkata, Mumbai, New Delhi</option><option>(GMT-05:00) Eastern Time</option><option>(GMT+00:00) London</option></select></div>
           </div>
-          <div class="form-actions"><button class="btn btn-primary btn-sm">Save changes</button><button class="btn btn-ghost btn-sm">Cancel</button></div>
+          <div class="form-actions"><button class="btn btn-primary btn-sm" id="set-save-btn">Save changes</button><button class="btn btn-ghost btn-sm">Cancel</button></div>
+        </div>
+      </div>
+
+      <div class="settings-tab-panel" data-tabpanel="security" style="display:none;">
+        <div class="panel settings-panel" style="max-width:680px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--hair);">
+            <div>
+              <div class="t-title" style="font-size:14px;font-weight:600;color:var(--text-hi);">Google Authenticator (TOTP 2FA)</div>
+              <div class="t-sub" style="font-size:12.5px;color:var(--text-mid);margin-top:2px;">Protect your account with Time-Based One-Time Passwords on your phone.</div>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" id="nx-btn-setup-2fa">Setup 2FA</button>
+          </div>
+
+          <div style="margin-top:20px;">
+            <div style="font-size:13px;font-weight:600;color:var(--text-hi);margin-bottom:8px;">Active Session & Security Log</div>
+            <div style="font-size:12px;color:var(--text-mid);line-height:1.6;">
+              Every login attempt creates an immutable audit record in PostgreSQL with client IP, timestamp, and device User-Agent. Super Admin accounts require mandatory 2FA.
+            </div>
+          </div>
         </div>
       </div>
 

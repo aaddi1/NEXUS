@@ -2484,6 +2484,100 @@ function createInvoice(){
     toast(label,`${id} · frontend action ready.`)
   }
 
+  /* Settings Tab Switcher */
+  document.addEventListener('click', e => {
+    const tab = e.target.closest('#settings-tabs .tab-btn');
+    if (tab) {
+      document.querySelectorAll('#settings-tabs .tab-btn').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const tabName = tab.dataset.tab;
+      document.querySelectorAll('.settings-tab-panel').forEach(p => {
+        p.style.display = p.dataset.tabpanel === tabName ? 'block' : 'none';
+      });
+    }
+  });
+
+  /* 2FA Setup Wizard */
+  document.addEventListener('click', async e => {
+    const btn = e.target.closest('#nx-btn-setup-2fa');
+    if (btn) {
+      e.preventDefault();
+      try {
+        toast('2FA Security', 'Generating Google Authenticator setup key...');
+        const res = await NexusAPI.nexusRequest('/auth/2fa/setup', { method: 'POST' });
+
+        if (!res.success) throw new Error(res.message || 'Failed to generate 2FA setup');
+
+        const wizardHtml = `
+          <form id="nx-active-2fa-setup-form" style="display:flex;flex-direction:column;gap:14px;text-align:center;">
+            <div style="font-size:13px;color:var(--text-mid);line-height:1.5;max-width:380px;margin:0 auto;">
+              1. Open <strong>Google Authenticator</strong> on your phone.<br>
+              2. Scan the QR code below or manually type the secret key.
+            </div>
+
+            <div style="margin:10px auto;background:#FFFFFF;padding:10px;border-radius:12px;display:inline-block;box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+              <img src="${res.qr_code_data_url}" width="160" height="160" alt="Google Authenticator QR Code" style="display:block;">
+            </div>
+
+            <div>
+              <span style="font-size:11px;color:var(--text-low);display:block;margin-bottom:4px;">MANUAL SECRET KEY (BASE32):</span>
+              <code style="font-family:monospace;font-size:13px;font-weight:700;color:var(--mango-gold);background:#12171D;padding:6px 12px;border-radius:6px;border:1px solid var(--glass-border);letter-spacing:1px;user-select:all;">${res.secret}</code>
+            </div>
+
+            <div class="nx-field" style="max-width:240px;margin:10px auto 0;">
+              <label>Enter 6-Digit Code to Confirm</label>
+              <input type="text" id="setup-mfa-code" maxlength="6" placeholder="000000" autofocus required
+                style="text-align:center;font-family:monospace;font-size:22px;font-weight:700;letter-spacing:6px;height:44px;border-radius:10px;background:#12171D;border:1.5px solid var(--mango-1);color:var(--mango-gold);">
+            </div>
+
+            ${res.backup_codes && res.backup_codes.length ? `
+              <div style="background:rgba(255,255,255,0.03);border:1px solid var(--hair);border-radius:8px;padding:10px;margin-top:5px;font-size:11px;color:var(--text-mid);">
+                <strong>Backup Recovery Codes:</strong>
+                <div style="font-family:monospace;color:var(--text-hi);margin-top:4px;">${res.backup_codes.join(' · ')}</div>
+              </div>
+            ` : ''}
+          </form>
+        `;
+
+        openModal(
+          'Google Authenticator 2FA Setup',
+          'Scan QR code to link your phone authenticator.',
+          wizardHtml,
+          `<button class="btn btn-ghost btn-sm" type="button" data-close-modal>Cancel</button><button class="btn btn-primary btn-sm" type="submit" form="nx-active-2fa-setup-form">Activate 2FA</button>`,
+          false
+        );
+
+        const form = document.getElementById('nx-active-2fa-setup-form');
+        if (form) {
+          form.onsubmit = async (evt) => {
+            evt.preventDefault();
+            const code = (document.getElementById('setup-mfa-code')?.value || '').trim();
+            if (!code) return;
+
+            try {
+              const confirmRes = await NexusAPI.nexusRequest('/auth/2fa/verify-setup', {
+                method: 'POST',
+                body: JSON.stringify({ secret: res.secret, code, backup_codes: res.backup_codes })
+              });
+
+              if (!confirmRes.success) throw new Error(confirmRes.message || 'Verification code failed');
+
+              closeModal();
+              toast('2FA Activated', 'Google Authenticator 2FA is now active on your account!');
+              btn.textContent = '✓ 2FA Active (Protected)';
+              btn.className = 'btn btn-ghost btn-sm';
+              btn.style.color = 'var(--mango-gold)';
+            } catch (vErr) {
+              toast('2FA Error', vErr.message);
+            }
+          };
+        }
+      } catch (err) {
+        toast('Setup Error', err.message);
+      }
+    }
+  });
+
   /* Customers top actions */
   document.addEventListener('click',e=>{
     const add=e.target.closest('#nx-add-customer');

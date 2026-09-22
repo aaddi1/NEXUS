@@ -149,6 +149,70 @@
       });
     });
 
+    // Google Authenticator 2FA Verification Modal Challenge
+    function openTwoFactorChallengeModal(mfaData) {
+      if (typeof openModal !== 'function') {
+        const code = prompt('Enter 6-digit Google Authenticator code:');
+        if (code) submitTwoFactorCode(mfaData.mfa_token, code);
+        return;
+      }
+
+      const challengeHtml = `
+        <form id="nx-active-2fa-form" style="display:flex;flex-direction:column;gap:14px;text-align:center;">
+          <div style="font-size:36px;margin:5px 0;">📱</div>
+          <div style="font-size:14px;font-weight:700;color:var(--text-hi);">Two-Factor Authentication</div>
+          <p style="font-size:12.5px;color:var(--text-mid);line-height:1.5;margin:0 auto;max-width:340px;">
+            Open the <strong>Google Authenticator</strong> app on your phone and enter the 6-digit code for <strong>${mfaData.email}</strong>.
+          </p>
+
+          <div class="nx-field" style="max-width:240px;margin:10px auto 0;">
+            <input type="text" id="mfa-code" maxlength="8" placeholder="000 000" autofocus required
+              style="text-align:center;font-family:monospace;font-size:24px;font-weight:700;letter-spacing:6px;height:48px;border-radius:10px;background:#12171D;border:1.5px solid var(--mango-1);color:var(--mango-gold);">
+          </div>
+          <div style="font-size:11px;color:var(--text-low);margin-top:2px;">You can also enter an 8-digit backup recovery code.</div>
+        </form>
+      `;
+
+      openModal(
+        'Google Authenticator Verification',
+        'Security checkpoint required to access NEXUS.',
+        challengeHtml,
+        `<button class="btn btn-ghost btn-sm" type="button" data-close-modal>Cancel</button><button class="btn btn-primary btn-sm" type="submit" form="nx-active-2fa-form">Verify & Continue</button>`,
+        false
+      );
+
+      const f = document.getElementById('nx-active-2fa-form');
+      if (f) {
+        f.onsubmit = async (e) => {
+          e.preventDefault();
+          const code = (document.getElementById('mfa-code')?.value || '').trim();
+          if (!code) return;
+          await submitTwoFactorCode(mfaData.mfa_token, code);
+        };
+      }
+    }
+
+    async function submitTwoFactorCode(mfaToken, code) {
+      try {
+        const res = await fetch(`${API}/auth/2fa/verify-login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mfa_token: mfaToken, code })
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.message || 'Invalid 2FA code');
+        }
+
+        if (typeof closeModal === 'function') closeModal();
+        setAuthenticated(data.token, data.user);
+        if (typeof toast === 'function') toast('2FA Verified', `Signed in securely as ${data.user.name}`);
+      } catch (err) {
+        if (typeof toast === 'function') toast('2FA Error', err.message);
+      }
+    }
+
     // 2. Sign In Submit Handler
     if (loginForm) {
       loginForm.addEventListener('submit', async (e) => {
@@ -171,6 +235,11 @@
 
           if (!res.ok || !data.success) {
             throw new Error(data.message || 'Invalid email or password');
+          }
+
+          if (data.mfa_required) {
+            openTwoFactorChallengeModal(data);
+            return;
           }
 
           setAuthenticated(data.token, data.user);
@@ -296,6 +365,11 @@
 
         if (!res.ok || !data.success) {
           throw new Error(data.message || 'SSO authentication failed');
+        }
+
+        if (data.mfa_required) {
+          openTwoFactorChallengeModal(data);
+          return;
         }
 
         setAuthenticated(data.token, data.user);
