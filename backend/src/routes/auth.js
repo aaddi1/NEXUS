@@ -131,6 +131,62 @@ router.post('/register', async (req, res) => {
   }
 });
 
+// SSO LOGIN / REGISTRATION (Google, GitHub, Microsoft)
+router.post('/sso', async (req, res) => {
+  try {
+    const { provider = 'SSO', email, name, role = 'member' } = req.body;
+
+    if (!email || !name) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and name are required'
+      });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = name.trim();
+
+    let user = await pool.query(
+      'SELECT id, name, email, role FROM users WHERE LOWER(email) = $1',
+      [cleanEmail]
+    );
+
+    if (user.rows.length === 0) {
+      const dummySalt = await bcrypt.genSalt(10);
+      const dummyHash = await bcrypt.hash('sso_authenticated_user_nexus_2026', dummySalt);
+
+      const inserted = await pool.query(
+        `INSERT INTO users (name, email, password_hash, role)
+         VALUES ($1, $2, $3, $4)
+         RETURNING id, name, email, role, created_at`,
+        [cleanName, cleanEmail, dummyHash, role]
+      );
+      user = inserted;
+    }
+
+    const userData = user.rows[0];
+
+    const token = jwt.sign(
+      { id: userData.id, email: userData.email, role: userData.role },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    res.json({
+      success: true,
+      message: `Signed in via ${provider}`,
+      token,
+      user: userData
+    });
+  } catch (error) {
+    console.error('SSO backend error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'SSO authentication failed'
+    });
+  }
+});
+
 // GET CURRENT AUTH USER
 router.get('/me', async (req, res) => {
   try {

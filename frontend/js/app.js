@@ -185,8 +185,78 @@ document.getElementById('pipeline-stage').innerHTML = ['Discovery','Proposal','N
   return `<div class="top-product-row"><div style="flex:1;"><div class="tp-name">${s}</div><div class="tp-meta">${items.length} deals</div><div class="tp-bar"><div class="tp-fill" style="width:${Math.min(pct,100)}%;"></div></div></div><div class="tp-val">${money(total)}</div></div>`;
 }).join('');
 
-const NX_PHOTOS={"Aryan Sharma":"https://i.pravatar.cc/160?img=12","Riya Mehta":"https://i.pravatar.cc/160?img=47","Arjun Verma":"https://i.pravatar.cc/160?img=11","Priya Nair":"https://i.pravatar.cc/160?img=44","Vivek Malhotra":"https://i.pravatar.cc/160?img=68","Kavya Singh":"https://i.pravatar.cc/160?img=32","Rahul Kapoor":"https://i.pravatar.cc/160?img=53","Neha Sharma":"https://i.pravatar.cc/160?img=49","Alphonso Mango Crate":"https://images.unsplash.com/photo-1605027990121-cbae9e0642df?w=160&q=80","Filter Coffee Concentrate":"https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=160&q=80","Multigrain Atta Bread":"https://images.unsplash.com/photo-1509440159596-0249088772ff?w=160&q=80","Organic Honey Jar 500g":"https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=160&q=80","Nimbu Soda Bottle":"https://images.unsplash.com/photo-1554866585-cd94860890b7?w=160&q=80","Kaju Badam Mix":"https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=160&q=80","Desi Tamatar Box":"https://images.unsplash.com/photo-1546094096-0df4bcaaa337?w=160&q=80","Dark Chocolate Bar 70%":"https://images.unsplash.com/photo-1575377427642-087cf684f04b?w=160&q=80"};
-const nxPhoto=(name)=>NX_PHOTOS[String(name).trim()]||`https://i.pravatar.cc/160?u=${encodeURIComponent(name)}`;
+
+const NX_PRODUCT_PHOTOS = {
+  "Alphonso Mango Crate": "https://images.unsplash.com/photo-1553279768-865429fa0078?w=160&q=80",
+  "Filter Coffee Concentrate": "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=160&q=80",
+  "Multigrain Atta Bread": "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=160&q=80",
+  "Organic Honey Jar 500g": "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=160&q=80",
+  "Nimbu Soda Bottle": "https://images.unsplash.com/photo-1554866585-cd94860890b7?w=160&q=80",
+  "Kaju Badam Mix": "https://images.unsplash.com/photo-1599785209707-a456fc1337bb?w=160&q=80",
+  "Desi Tamatar Box": "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=160&q=80",
+  "Dark Chocolate Bar 70%": "https://images.unsplash.com/photo-1575377427642-087cf684f04b?w=160&q=80"
+};
+
+const NX_CUSTOMER_PHOTOS = {
+  "Aryan Sharma": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=160&q=80",
+  "Riya Mehta": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=160&q=80",
+  "Arjun Verma": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160&q=80",
+  "Priya Nair": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=160&q=80",
+  "Vivek Malhotra": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=160&q=80",
+  "Kavya Singh": "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=160&q=80",
+  "Rahul Kapoor": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=160&q=80",
+  "Neha Sharma": "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=160&q=80"
+};
+
+function nxProductPhoto(name, cat = "", sku = "") {
+  const cleanName = String(name || "").trim();
+  if (NX_PRODUCT_PHOTOS[cleanName]) return NX_PRODUCT_PHOTOS[cleanName];
+  const custom = JSON.parse(localStorage.getItem("nx_product_photos") || "{}");
+  if (custom[cleanName]) return custom[cleanName];
+
+  const search = (cleanName + " " + cat + " " + sku).toLowerCase();
+  if (search.includes("mango") || search.includes("fruit")) return "https://images.unsplash.com/photo-1553279768-865429fa0078?w=160&q=80";
+  if (search.includes("coffee") || search.includes("brew")) return "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=160&q=80";
+  if (search.includes("tea") || search.includes("chai")) return "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=160&q=80";
+  if (search.includes("honey")) return "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=160&q=80";
+  if (search.includes("bread") || search.includes("bakery") || search.includes("grain")) return "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=160&q=80";
+  if (search.includes("tomato") || search.includes("vegetable")) return "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=160&q=80";
+  if (search.includes("dry") || search.includes("nut") || search.includes("almond") || search.includes("kaju")) return "https://images.unsplash.com/photo-1599785209707-a456fc1337bb?w=160&q=80";
+  if (search.includes("spice") || search.includes("masala")) return "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=160&q=80";
+  if (search.includes("chocolate") || search.includes("sweet")) return "https://images.unsplash.com/photo-1575377427642-087cf684f04b?w=160&q=80";
+  if (search.includes("soda") || search.includes("drink") || search.includes("juice")) return "https://images.unsplash.com/photo-1554866585-cd94860890b7?w=160&q=80";
+
+  const generic = [
+    "https://images.unsplash.com/photo-1542838132-92c53300491e?w=160&q=80",
+    "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=160&q=80",
+    "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=160&q=80",
+    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=160&q=80"
+  ];
+  const hash = Math.abs(cleanName.split("").reduce((a, c) => a + c.charCodeAt(0), 0)) % generic.length;
+  return generic[hash];
+}
+
+function nxCustomerPhoto(name, email = "", id = "") {
+  const cleanName = String(name || "").trim();
+  if (NX_CUSTOMER_PHOTOS[cleanName]) return NX_CUSTOMER_PHOTOS[cleanName];
+  const custom = JSON.parse(localStorage.getItem("nx_customer_photos") || "{}");
+  if (custom[cleanName]) return custom[cleanName];
+
+  const pool = [
+    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=160&q=80",
+    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160&q=80",
+    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=160&q=80",
+    "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=160&q=80",
+    "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=160&q=80",
+    "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=160&q=80",
+    "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=160&q=80",
+    "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=160&q=80"
+  ];
+  const hash = Math.abs((cleanName + email + id).split("").reduce((a, c) => a + c.charCodeAt(0), 0)) % pool.length;
+  return pool[hash];
+}
+
+const nxPhoto = (name) => nxProductPhoto(name);
 
 /* products table */
 document.getElementById('products-table').innerHTML = `
@@ -409,6 +479,7 @@ document.querySelectorAll('.switch[data-toggle]').forEach(sw=>{
     const headers={'Content-Type':'application/json', ...(token?{Authorization:`Bearer ${token}`}:{})};
     let customers=[], productList=[], rows=[];
     let selectedCustomerId = null;
+    let discountType = 'fixed';
     let discountVal = 0;
     let taxRateVal = 18;
     let isQuickCustomerOpen = false;
@@ -435,7 +506,13 @@ document.querySelectorAll('.switch[data-toggle]').forEach(sw=>{
 
     function calculateOrderTotals(){
       const subtotal = rows.reduce((sum, r) => sum + (Number(r.price) || 0) * (Number(r.qty) || 1), 0);
-      const discountAmount = Math.max(0, Math.min(subtotal, Number(discountVal) || 0));
+      let discountAmount = 0;
+      if (discountType === 'percent') {
+        const pct = Math.max(0, Math.min(100, Number(discountVal) || 0));
+        discountAmount = Math.round(subtotal * (pct / 100) * 100) / 100;
+      } else {
+        discountAmount = Math.max(0, Math.min(subtotal, Number(discountVal) || 0));
+      }
       const taxable = Math.max(0, subtotal - discountAmount);
       const taxAmount = Math.round(taxable * (Number(taxRateVal) / 100) * 100) / 100;
       const total = Math.round((taxable + taxAmount) * 100) / 100;
@@ -531,8 +608,14 @@ document.querySelectorAll('.switch[data-toggle]').forEach(sw=>{
             <div style="display:flex;flex-direction:column;gap:12px;">
               <div class="nx-form-grid" style="gap:10px;">
                 <div class="nx-field" style="margin:0;">
-                  <label>Discount Amount (₹)</label>
-                  <input type="number" id="nx-order-discount" min="0" step="1" value="${discountVal}" placeholder="0" style="height:36px;font-size:13px;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                    <label style="margin-bottom:0;">Discount</label>
+                    <div style="display:flex;gap:3px;background:#12171D;padding:2px;border-radius:6px;border:1px solid var(--glass-border);">
+                      <button type="button" class="btn btn-ghost btn-sm ${discountType==='fixed'?'active':''}" id="nx-order-disc-fixed" style="padding:1px 6px;font-size:10.5px;${discountType==='fixed'?'background:var(--mango-1);color:#07120B;font-weight:700;':''}">₹ Flat</button>
+                      <button type="button" class="btn btn-ghost btn-sm ${discountType==='percent'?'active':''}" id="nx-order-disc-pct" style="padding:1px 6px;font-size:10.5px;${discountType==='percent'?'background:var(--mango-1);color:#07120B;font-weight:700;':''}">% Pct</button>
+                    </div>
+                  </div>
+                  <input type="number" id="nx-order-discount" min="0" step="1" value="${discountVal}" placeholder="${discountType==='percent'?'e.g. 10%':'e.g. ₹500'}" style="height:36px;font-size:13px;">
                 </div>
                 <div class="nx-field" style="margin:0;">
                   <label>GST / Tax Rate</label>
@@ -581,7 +664,7 @@ document.querySelectorAll('.switch[data-toggle]').forEach(sw=>{
                   <span>${money(totals.subtotal)}</span>
                 </div>
                 <div style="display:flex;justify-content:space-between;color:var(--text-mid);font-size:12.5px;">
-                  <span>Discount</span>
+                  <span>Discount (${discountType==='percent' ? discountVal+'%' : '₹'})</span>
                   <span style="color:var(--ok);">- ${money(totals.discountAmount)}</span>
                 </div>
                 <div style="display:flex;justify-content:space-between;color:var(--text-mid);font-size:12.5px;">
@@ -682,13 +765,16 @@ document.querySelectorAll('.switch[data-toggle]').forEach(sw=>{
       }
 
       // Discount & Tax changes
+      const discFixedBtn = $('#nx-order-disc-fixed');
+      const discPctBtn = $('#nx-order-disc-pct');
+      if(discFixedBtn) discFixedBtn.onclick = () => { discountType = 'fixed'; render(); };
+      if(discPctBtn) discPctBtn.onclick = () => { discountType = 'percent'; render(); };
+
       const discountInput = $('#nx-order-discount');
       if(discountInput){
         discountInput.oninput = (e) => {
           discountVal = Math.max(0, Number(e.target.value) || 0);
-          const t = calculateOrderTotals();
-          const sumCard = f.querySelector('.nx-order-creator-wrap');
-          if(sumCard) render();
+          render();
         };
       }
 
@@ -860,697 +946,399 @@ document.querySelectorAll('.switch[data-toggle]').forEach(sw=>{
     }
   }
 
-  function createInvoice(){
+function createInvoice(){
+    const API = 'http://localhost:5000/api';
+    const token = localStorage.getItem('nexus_token');
+    const headers = {'Content-Type': 'application/json', ...(token ? {Authorization: `Bearer ${token}`} : {})};
+    let customers = [], productList = [], rows = [];
+    let selectedCustomerId = null;
+    let discountType = 'fixed';
+    let discountVal = 0;
+    let taxRateVal = 18;
+    let isQuickCustomerOpen = false;
 
-  const customerList =
-    Array.isArray(customersData)
-      ? customersData
-      : [];
-
-  let productList=[];
-  let rows=[];
-
-  const today=new Date();
-  const issueDate=
-    today.toISOString().slice(0,10);
-
-  openModal(
-    'Create invoice',
-    'Create a professional invoice from products and customer data.',
-    `
-      <div class="nx-form-grid">
-
-        <div class="nx-field full">
-          <label>Customer</label>
-          <select id="nx-invoice-customer" required>
-            <option value="">Select customer</option>
-            ${
-              customerList.map(c=>
-                `<option value="${esc(c.id)}">
-                  ${esc(c.name)}
-                </option>`
-              ).join('')
-            }
-          </select>
-        </div>
-
-        <div class="nx-field">
-          <label>Invoice date</label>
-          <input
-            id="nx-invoice-date"
-            type="date"
-            value="${issueDate}"
-            required
-          >
-        </div>
-
-        <div class="nx-field">
-          <label>Status</label>
-          <select id="nx-invoice-status" required>
-            <option value="draft">Draft</option>
-            <option value="due">Due</option>
-            <option value="paid">Paid</option>
-          </select>
-        </div>
-
-        <div
-          class="nx-field"
-          id="nx-invoice-payment-wrap"
-        >
-          <label>Payment Method</label>
-          <select id="nx-invoice-payment">
-            <option value="">Select payment method</option>
-            <option value="upi">UPI</option>
-            <option value="netbanking">Net Banking</option>
-            <option value="debit_card">Debit Card</option>
-            <option value="credit_card">Credit Card</option>
-            <option value="cash">Cash</option>
-            <option value="bank_transfer">Bank Transfer</option>
-          </select>
-        </div>
-
-        <div
-          class="nx-field full"
-          id="nx-invoice-due-wrap"
-          style="display:none;"
-        >
-          <label>Due date</label>
-          <input
-            id="nx-invoice-due"
-            type="date"
-          >
-        </div>
-
-        <div class="nx-field">
-          <label>Discount (%)</label>
-          <input
-            id="nx-invoice-discount"
-            type="number"
-            min="0"
-            max="100"
-            step="0.01"
-            value="0"
-          >
-        </div>
-
-        <div class="nx-field">
-          <label>GST (%)</label>
-          <select id="nx-invoice-tax">
-            <option value="0">0%</option>
-            <option value="5">5%</option>
-            <option value="12">12%</option>
-            <option value="18">18%</option>
-            <option value="28">28%</option>
-          </select>
-        </div>
-
-        <div class="nx-field full">
-          <label>Invoice items</label>
-
-          <div
-            id="nx-invoice-items"
-            style="display:flex;flex-direction:column;gap:10px;"
-          ></div>
-
-          <button
-            id="nx-add-invoice-item"
-            type="button"
-            class="btn btn-ghost btn-sm"
-            style="margin-top:10px;"
-          >
-            + Add Item
-          </button>
-        </div>
-
-        <div
-          id="nx-invoice-total-preview"
-          class="nx-field full"
-          style="
-            text-align:right;
-            font-size:16px;
-            font-weight:700;
-          "
-        >
-          Total: ₹0
-        </div>
-
-      </div>
-    `,
-    `
-      <button
-        class="btn btn-ghost btn-sm"
-        type="button"
-        data-close-modal
-      >
-        Cancel
-      </button>
-
-      <button
-        class="btn btn-primary btn-sm"
-        id="nx-save-invoice"
-        type="button"
-      >
-        Create Invoice
-      </button>
-    `
-  );
-
-  const customerEl=$('#nx-invoice-customer');
-  const statusEl=$('#nx-invoice-status');
-  const dueWrap=$('#nx-invoice-due-wrap');
-  const dueEl=$('#nx-invoice-due');
-  const paymentEl=$('#nx-invoice-payment');
-  const itemsEl=$('#nx-invoice-items');
-  const discountEl=$('#nx-invoice-discount');
-  const taxEl=$('#nx-invoice-tax');
-  const totalEl=$('#nx-invoice-total-preview');
-
-  function updateDueVisibility(){
-
-    const status=statusEl.value;
-
-    const needsDue =
-      status==='due';
-
-    dueWrap.style.display=
-      needsDue ? '' : 'none';
-
-    dueEl.required=needsDue;
-
-    const isPaid = status === 'paid';
-
-    paymentEl.required = isPaid;
-
-    if(!isPaid){
-      paymentEl.value = '';
-    }
-
-    if(!needsDue){
-      dueEl.value='';
-    }
-  }
-
-  statusEl.addEventListener(
-    'change',
-    updateDueVisibility
-  );
-
-  function calculate(){
-
-    let subtotal=0;
-
-    rows.forEach(row=>{
-      subtotal +=
-        Number(row.qty||0) *
-        Number(row.price||0);
-    });
-
-    const discountRate=
-      Math.min(
-        100,
-        Math.max(
-          0,
-          Number(discountEl.value)||0
-        )
-      );
-
-    const discountAmount=
-      subtotal * discountRate / 100;
-
-    const taxable=
-      Math.max(
-        0,
-        subtotal-discountAmount
-      );
-
-    const taxRate=
-      Number(taxEl.value)||0;
-
-    const taxAmount=
-      taxable*taxRate/100;
-
-    const total=
-      taxable+taxAmount;
-
-    totalEl.textContent=
-      `Total: ${money(total)}`;
-
-    return {
-      subtotal,
-      discountRate,
-      discountAmount,
-      taxable,
-      taxRate,
-      taxAmount,
-      total
+    const api = async (path, options = {}) => {
+      const r = await fetch(API + path, {...options, headers: {...headers, ...(options.headers || {})}});
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.message || 'API request failed');
+      return d;
     };
-  }
 
-  function renderRows(){
+    async function openInvoiceForm(){
+      try {
+        const [cr, pr] = await Promise.all([api('/customers'), api('/products')]);
+        customers = cr.data || cr.customers || [];
+        productList = pr.data || pr.products || [];
+        if (!customers.length && !productList.length) {
+          toast('Invoice unavailable', 'Customers and products are required.');
+          return;
+        }
+        if (!rows.length && productList.length) {
+          rows = [{productId: productList[0].id, qty: 1, price: Number(productList[0].price) || 0}];
+        }
+        render();
+      } catch (err) {
+        toast('Could not open invoice', err.message);
+      }
+    }
 
-    itemsEl.innerHTML='';
+    function calculateInvoiceTotals(){
+      const subtotal = rows.reduce((sum, r) => sum + (Number(r.price) || 0) * (Number(r.qty) || 1), 0);
+      let discountAmount = 0;
+      if (discountType === 'percent') {
+        const pct = Math.max(0, Math.min(100, Number(discountVal) || 0));
+        discountAmount = Math.round(subtotal * (pct / 100) * 100) / 100;
+      } else {
+        discountAmount = Math.max(0, Math.min(subtotal, Number(discountVal) || 0));
+      }
+      const taxable = Math.max(0, subtotal - discountAmount);
+      const taxAmount = Math.round(taxable * (Number(taxRateVal) / 100) * 100) / 100;
+      const total = Math.round((taxable + taxAmount) * 100) / 100;
+      return { subtotal, discountAmount, taxable, taxAmount, total };
+    }
 
-    rows.forEach(row=>{
+    function render(){
+      const totals = calculateInvoiceTotals();
+      const today = new Date().toISOString().slice(0, 10);
+      const in15Days = new Date(Date.now() + 15 * 86400000).toISOString().slice(0, 10);
 
-      const wrap=
-        document.createElement('div');
+      const contentHtml = `
+        <div class="nx-invoice-creator-wrap" style="display:flex;flex-direction:column;gap:18px;">
+          <!-- 1. Customer & Invoicing Details -->
+          <div style="background:rgba(255,255,255,0.025);border:1px solid var(--hair);border-radius:12px;padding:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <span style="font-size:12px;font-weight:700;color:var(--text-hi);letter-spacing:0.04em;text-transform:uppercase;">Invoice Recipient</span>
+              <button type="button" class="btn btn-ghost btn-sm" id="nx-inv-toggle-new-cust" style="padding:4px 10px;font-size:11.5px;color:var(--mango-1);border-color:rgba(47,167,102,0.35);background:rgba(47,167,102,0.08);">
+                ${isQuickCustomerOpen ? '▲ Hide Customer Form' : '+ New Customer'}
+              </button>
+            </div>
 
-      wrap.style.cssText=
-        'display:grid;grid-template-columns:1fr 90px 110px 42px;gap:8px;align-items:center;';
+            <!-- Quick Inline Customer Form -->
+            ${isQuickCustomerOpen ? `
+              <div id="nx-inv-quick-cust-drawer" style="margin-bottom:14px;padding:14px;border:1px solid rgba(47,167,102,0.3);border-radius:10px;background:rgba(47,167,102,0.04);">
+                <div style="font-size:12px;font-weight:600;color:var(--mango-gold);margin-bottom:10px;">Register New Customer</div>
+                <div class="nx-form-grid" style="gap:10px;">
+                  <div class="nx-field"><label>Full Name *</label><input type="text" id="qc-inv-name" placeholder="e.g. Priya Nair" required></div>
+                  <div class="nx-field"><label>Work Email *</label><input type="email" id="qc-inv-email" placeholder="priya@company.in" required></div>
+                  <div class="nx-field"><label>Phone (+91 format) *</label><input type="tel" id="qc-inv-phone" placeholder="+91 98765 43210" required></div>
+                  <div class="nx-field"><label>Company</label><input type="text" id="qc-inv-company" placeholder="Business / Enterprise"></div>
+                  <div class="nx-field"><label>City</label><input type="text" id="qc-inv-city" value="Mumbai" placeholder="City"></div>
+                  <div class="nx-field"><label>Segment</label><select id="qc-inv-seg"><option value="Standard">Standard</option><option value="VIP">VIP</option><option value="New">New</option></select></div>
+                </div>
+                <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;">
+                  <button type="button" class="btn btn-ghost btn-sm" id="qc-inv-cancel">Cancel</button>
+                  <button type="button" class="btn btn-primary btn-sm" id="qc-inv-save" style="width:auto;padding:6px 14px;">Save & Select Customer</button>
+                </div>
+              </div>
+            ` : ''}
 
-      wrap.innerHTML=`
-        <select
-          class="nx-row-product"
-          data-row="${row.id}"
-        >
-          <option value="">Select product</option>
-          ${
-            productList.map(p=>
-              `<option
-                value="${esc(p.id)}"
-                ${String(p.id)===String(row.productId)?'selected':''}
-              >
-                ${esc(p.name)}
-              </option>`
-            ).join('')
-          }
-        </select>
+            <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:12px;">
+              <div class="nx-field" style="margin:0;">
+                <label>Billed To (Customer)</label>
+                <select name="customer_id" id="nx-inv-customer-select">
+                  ${customers.map(c=>`<option value="${c.id}" ${Number(c.id)===Number(selectedCustomerId || customers[0]?.id)?'selected':''}>${esc(c.name)}${c.company ? ` · ${esc(c.company)}` : ''}</option>`).join('')}
+                </select>
+              </div>
+              <div class="nx-field" style="margin:0;">
+                <label>Issue Date</label>
+                <input type="date" id="nx-inv-issue-date" value="${today}" style="height:36px;font-size:13px;">
+              </div>
+              <div class="nx-field" style="margin:0;">
+                <label>Due Date</label>
+                <input type="date" id="nx-inv-due-date" value="${in15Days}" style="height:36px;font-size:13px;">
+              </div>
+            </div>
+          </div>
 
-        <input
-          class="nx-row-qty"
-          data-row="${row.id}"
-          type="number"
-          min="1"
-          step="1"
-          value="${row.qty}"
-        >
+          <!-- 2. Invoice Line Items -->
+          <div style="background:rgba(255,255,255,0.025);border:1px solid var(--hair);border-radius:12px;padding:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <span style="font-size:12px;font-weight:700;color:var(--text-hi);letter-spacing:0.04em;text-transform:uppercase;">Invoice Line Items</span>
+              <button type="button" class="btn btn-ghost btn-sm" id="nx-add-inv-item" style="padding:4px 10px;font-size:11.5px;color:var(--mango-1);border-color:rgba(47,167,102,0.35);background:rgba(47,167,102,0.08);">+ Add Line Item</button>
+            </div>
 
-        <input
-          type="text"
-          value="${row.price ? money(row.price) : '₹0'}"
-          readonly
-          style="opacity:.8;"
-        >
+            <div class="nx-order-items" id="nx-invoice-items-list" style="border-radius:8px;overflow:hidden;border:1px solid var(--hair);">
+              ${rows.map((r,i)=>{
+                return `
+                  <div class="nx-order-row" style="display:grid;grid-template-columns:1.8fr 90px 110px 32px;gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--hair);background:rgba(255,255,255,0.015);">
+                    <div>
+                      <select data-inv-product="${i}" style="width:100%;height:36px;border-radius:7px;background:#12171D;border:1px solid var(--glass-border);color:var(--text-hi);padding:0 8px;font-size:13px;">
+                        ${productList.map(x=>`<option value="${x.id}" ${Number(x.id)===Number(r.productId)?'selected':''}>${esc(x.name)} (${esc(x.sku)}) — ${money(x.price)}</option>`).join('')}
+                      </select>
+                    </div>
+                    <div>
+                      <input data-inv-qty="${i}" type="number" min="1" max="9999" value="${r.qty}" style="width:100%;height:36px;border-radius:7px;background:#12171D;border:1px solid var(--glass-border);color:var(--text-hi);padding:0 8px;font-size:13px;text-align:center;">
+                    </div>
+                    <div style="font-weight:600;font-size:13.5px;color:var(--text-hi);text-align:right;">
+                      ${money(r.price * r.qty)}
+                    </div>
+                    <div style="text-align:center;">
+                      <button type="button" class="nx-remove" data-remove-inv-row="${i}" style="color:var(--danger);background:transparent;border:0;cursor:pointer;font-size:18px;line-height:1;" title="Remove Item">×</button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
 
-        <button
-          type="button"
-          class="btn btn-ghost btn-sm nx-remove-invoice-row"
-          data-row="${row.id}"
-          title="Remove item"
-        >
-          ×
-        </button>
+          <!-- 3. Taxes, Discounts, Payment & Summary -->
+          <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:14px;background:rgba(255,255,255,0.025);border:1px solid var(--hair);border-radius:12px;padding:16px;">
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div class="nx-form-grid" style="gap:10px;">
+                <div class="nx-field" style="margin:0;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                    <label style="margin-bottom:0;">Discount</label>
+                    <div style="display:flex;gap:3px;background:#12171D;padding:2px;border-radius:6px;border:1px solid var(--glass-border);">
+                      <button type="button" class="btn btn-ghost btn-sm ${discountType==='fixed'?'active':''}" id="nx-inv-disc-fixed" style="padding:1px 6px;font-size:10.5px;${discountType==='fixed'?'background:var(--mango-1);color:#07120B;font-weight:700;':''}">₹ Flat</button>
+                      <button type="button" class="btn btn-ghost btn-sm ${discountType==='percent'?'active':''}" id="nx-inv-disc-pct" style="padding:1px 6px;font-size:10.5px;${discountType==='percent'?'background:var(--mango-1);color:#07120B;font-weight:700;':''}">% Pct</button>
+                    </div>
+                  </div>
+                  <input type="number" id="nx-inv-discount" min="0" step="1" value="${discountVal}" placeholder="${discountType==='percent'?'e.g. 10%':'e.g. ₹500'}" style="height:36px;font-size:13px;">
+                </div>
+                <div class="nx-field" style="margin:0;">
+                  <label>GST Rate</label>
+                  <select id="nx-inv-tax-rate" style="height:36px;font-size:13px;">
+                    <option value="0" ${Number(taxRateVal)===0?'selected':''}>0% (Tax Exempt)</option>
+                    <option value="5" ${Number(taxRateVal)===5?'selected':''}>5% GST</option>
+                    <option value="12" ${Number(taxRateVal)===12?'selected':''}>12% GST</option>
+                    <option value="18" ${Number(taxRateVal)===18?'selected':''}>18% GST (Standard)</option>
+                    <option value="28" ${Number(taxRateVal)===28?'selected':''}>28% GST</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="nx-form-grid" style="gap:10px;">
+                <div class="nx-field" style="margin:0;">
+                  <label>Payment Method</label>
+                  <select id="nx-inv-payment-method" style="height:36px;font-size:13px;">
+                    <option value="upi" selected>UPI (GPay / PhonePe / Paytm)</option>
+                    <option value="netbanking">Net Banking</option>
+                    <option value="credit_card">Credit / Debit Card</option>
+                    <option value="bank_transfer">Bank Transfer (NEFT/RTGS)</option>
+                    <option value="cash">Cash</option>
+                  </select>
+                </div>
+                <div class="nx-field" style="margin:0;">
+                  <label>Initial Status</label>
+                  <select id="nx-inv-status" style="height:36px;font-size:13px;">
+                    <option value="due" selected>Due (Issued)</option>
+                    <option value="draft">Draft</option>
+                    <option value="paid">Paid (Settled)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Financial Summary Card -->
+            <div style="background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px;display:flex;flex-direction:column;justify-content:space-between;">
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <div style="display:flex;justify-content:space-between;color:var(--text-mid);font-size:12.5px;">
+                  <span>Subtotal</span>
+                  <span>${money(totals.subtotal)}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;color:var(--text-mid);font-size:12.5px;">
+                  <span>Discount (${discountType==='percent' ? discountVal+'%' : '₹'})</span>
+                  <span style="color:var(--ok);">- ${money(totals.discountAmount)}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;color:var(--text-mid);font-size:12.5px;">
+                  <span>GST (${taxRateVal}%)</span>
+                  <span>+ ${money(totals.taxAmount)}</span>
+                </div>
+              </div>
+
+              <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:12px;margin-top:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <span style="font-size:13px;font-weight:700;color:var(--text-hi);">Total Invoice</span>
+                  <span style="font-size:20px;font-weight:700;color:var(--mango-1);font-family:'Space Grotesk',sans-serif;">${money(totals.total)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       `;
 
-      itemsEl.appendChild(wrap);
-    });
+      openModal(
+        'Generate Tax Invoice',
+        'Issue digital commercial tax invoice with HMAC-SHA256 & QR verification.',
+        `<form id="nx-active-inv-form">${contentHtml}</form>`,
+        `<button class="btn btn-ghost btn-sm" type="button" data-close-modal>Cancel</button>${primary('Issue & Save Invoice')}`,
+        true
+      );
 
-    itemsEl
-      .querySelectorAll('.nx-row-product')
-      .forEach(select=>{
+      const f = $('#nx-active-inv-form');
+      if(!f) return;
 
-        select.addEventListener(
-          'change',
-          ()=>{
-
-            const row=
-              rows.find(
-                r=>String(r.id)===String(select.dataset.row)
-              );
-
-            const product=
-              productList.find(
-                p=>String(p.id)===String(select.value)
-              );
-
-            if(row){
-              row.productId=
-                product?.id || '';
-
-              row.price=
-                Number(product?.price)||0;
-            }
-
-            renderRows();
-            calculate();
-          }
-        );
-
-      });
-
-    itemsEl
-      .querySelectorAll('.nx-row-qty')
-      .forEach(input=>{
-
-        input.addEventListener(
-          'input',
-          ()=>{
-
-            const row=
-              rows.find(
-                r=>String(r.id)===String(input.dataset.row)
-              );
-
-            if(row){
-              row.qty=
-                Math.max(
-                  1,
-                  Number(input.value)||1
-                );
-            }
-
-            calculate();
-          }
-        );
-
-      });
-
-    itemsEl
-      .querySelectorAll('.nx-remove-invoice-row')
-      .forEach(button=>{
-
-        button.addEventListener(
-          'click',
-          ()=>{
-
-            rows=
-              rows.filter(
-                r=>String(r.id)!==
-                   String(button.dataset.row)
-              );
-
-            if(!rows.length){
-              addRow();
-            }else{
-              renderRows();
-              calculate();
-            }
-
-          }
-        );
-
-      });
-  }
-
-  function addRow(){
-
-    rows.push({
-      id:Date.now()+Math.random(),
-      productId:'',
-      qty:1,
-      price:0
-    });
-
-    renderRows();
-    calculate();
-  }
-
-  $('#nx-add-invoice-item')
-    .addEventListener(
-      'click',
-      addRow
-    );
-
-  discountEl.addEventListener(
-    'input',
-    calculate
-  );
-
-  taxEl.addEventListener(
-    'change',
-    calculate
-  );
-
-  async function loadProducts(){
-
-    try{
-
-      if(window.NexusAPI?.products){
-
-        const result=
-          await window.NexusAPI.products();
-
-        productList=
-          Array.isArray(result?.data)
-            ? result.data
-            : Array.isArray(result)
-              ? result
-              : [];
+      const toggleCustBtn = $('#nx-inv-toggle-new-cust');
+      if(toggleCustBtn){
+        toggleCustBtn.onclick = (e) => {
+          e.preventDefault();
+          isQuickCustomerOpen = !isQuickCustomerOpen;
+          render();
+        };
       }
 
-    }catch(_){}
-
-    if(!productList.length){
-
-      try{
-
-        const token=
-          localStorage.getItem('nexus_token');
-
-        const r=
-          await fetch(
-            'http://localhost:5000/api/products',
-            {
-              headers:
-                token
-                  ? {
-                      Authorization:
-                        `Bearer ${token}`
-                    }
-                  : {}
-            }
-          );
-
-        const d=
-          await r.json();
-
-        productList=
-          Array.isArray(d?.data)
-            ? d.data
-            : [];
-
-      }catch(err){
-
-        console.error(
-          'Invoice products load failed',
-          err
-        );
-
+      const qcCancelBtn = $('#qc-inv-cancel');
+      if(qcCancelBtn){
+        qcCancelBtn.onclick = (e) => {
+          e.preventDefault();
+          isQuickCustomerOpen = false;
+          render();
+        };
       }
 
-    }
+      const qcSaveBtn = $('#qc-inv-save');
+      if(qcSaveBtn){
+        qcSaveBtn.onclick = async (e) => {
+          e.preventDefault();
+          const name = ($('#qc-inv-name')?.value || '').trim();
+          const email = ($('#qc-inv-email')?.value || '').trim();
+          const phone = ($('#qc-inv-phone')?.value || '').trim();
+          const company = ($('#qc-inv-company')?.value || '').trim();
+          const city = ($('#qc-inv-city')?.value || 'Mumbai').trim();
 
-    renderRows();
-    calculate();
-  }
-
-  $('#nx-save-invoice')
-    .addEventListener(
-      'click',
-      async ()=>{
-
-        const customerId=
-          Number(customerEl.value);
-
-        if(!customerId){
-          toast(
-            'Invoice failed',
-            'Select a customer.'
-          );
-          return;
-        }
-
-        const status=
-          statusEl.value;
-
-        const issueDate=
-          $('#nx-invoice-date').value;
-
-        const dueDate=
-          dueEl.value || null;
-
-        if(status==='due' && !dueDate){
-
-          toast(
-            'Invoice failed',
-            'Due date is required for a Due invoice.'
-          );
-
-          return;
-        }
-
-        if(
-          status==='due' &&
-          dueDate < issueDate
-        ){
-
-          toast(
-            'Invoice failed',
-            'Due date cannot be before invoice date.'
-          );
-
-          return;
-        }
-
-        const validRows=
-          rows.filter(
-            r=>r.productId
-          );
-
-        if(!validRows.length){
-
-          toast(
-            'Invoice failed',
-            'Add at least one product.'
-          );
-
-          return;
-        }
-
-        const paymentMethod =
-          paymentEl
-            ? paymentEl.value
-            : '';
-
-        if(status === 'paid' && !paymentMethod){
-
-          toast(
-            'Invoice failed',
-            'Payment method is required for a Paid invoice.'
-          );
-
-          return;
-        }
-
-        const calc=
-          calculate();
-
-        const items=
-          validRows.map(row=>({
-
-            product_id:
-              Number(row.productId),
-
-            quantity:
-              Math.max(
-                1,
-                Number(row.qty)||1
-              ),
-
-            unit_price:
-              Number(row.price)||0
-          }));
-
-        try{
-
-          const token=
-            localStorage.getItem(
-              'nexus_token'
-            );
-
-          const r=
-            await fetch(
-              'http://localhost:5000/api/invoices',
-              {
-                method:'POST',
-
-                headers:{
-                  'Content-Type':
-                    'application/json',
-
-                  ...(token
-                    ? {
-                        Authorization:
-                          `Bearer ${token}`
-                      }
-                    : {})
-                },
-
-                body:JSON.stringify({
-
-                  customer_id:
-                    customerId,
-
-                  issue_date:
-                    issueDate,
-
-                  due_date:
-                    dueDate,
-
-                  status:
-                    status,
-
-                  tax_rate:
-                    calc.taxRate,
-
-                  discount:
-                    calc.discountRate,
-
-                  payment_method:
-                    paymentMethod,
-
-                  items:
-                    items
-                })
-              }
-            );
-
-          const data=
-            await r.json()
-              .catch(()=>({}));
-
-          if(!r.ok){
-
-            throw new Error(
-              data.message ||
-              'Invoice API request failed'
-            );
+          if(!name || !email || !phone){
+            toast('Validation error', 'Name, email and phone are required.');
+            return;
           }
+
+          try {
+            const res = await api('/customers', {
+              method: 'POST',
+              body: JSON.stringify({ name, email, phone, company, city })
+            });
+
+            if(res.success && res.data){
+              customers.unshift(res.data);
+              selectedCustomerId = res.data.id;
+              isQuickCustomerOpen = false;
+              toast('Customer registered', `${res.data.name} created and selected.`);
+              render();
+            }
+          } catch(err) {
+            toast('Registration failed', err.message);
+          }
+        };
+      }
+
+      const custSelect = $('#nx-inv-customer-select');
+      if(custSelect){
+        custSelect.onchange = (e) => {
+          selectedCustomerId = Number(e.target.value);
+        };
+      }
+
+      const discFixedBtn = $('#nx-inv-disc-fixed');
+      const discPctBtn = $('#nx-inv-disc-pct');
+      if(discFixedBtn) discFixedBtn.onclick = () => { discountType = 'fixed'; render(); };
+      if(discPctBtn) discPctBtn.onclick = () => { discountType = 'percent'; render(); };
+
+      const discountInput = $('#nx-inv-discount');
+      if(discountInput){
+        discountInput.oninput = (e) => {
+          discountVal = Math.max(0, Number(e.target.value) || 0);
+          render();
+        };
+      }
+
+      const taxSelect = $('#nx-inv-tax-rate');
+      if(taxSelect){
+        taxSelect.onchange = (e) => {
+          taxRateVal = Number(e.target.value) || 0;
+          render();
+        };
+      }
+
+      f.addEventListener('change', e => {
+        const pi = e.target.dataset.invProduct;
+        if(pi !== undefined){
+          rows[pi].productId = Number(e.target.value);
+          rows[pi].price = Number(productList.find(x => Number(x.id) === Number(e.target.value))?.price) || 0;
+          render();
+          return;
+        }
+        const qi = e.target.dataset.invQty;
+        if(qi !== undefined){
+          rows[qi].qty = Math.max(1, Number(e.target.value) || 1);
+          render();
+        }
+      });
+
+      $$('#nx-active-inv-form [data-remove-inv-row]').forEach(b => {
+        b.onclick = () => {
+          rows.splice(Number(b.dataset.removeInvRow), 1);
+          if(!rows.length && productList.length) {
+            rows.push({ productId: productList[0].id, qty: 1, price: Number(productList[0].price) || 0 });
+          }
+          render();
+        };
+      });
+
+      const addRowBtn = $('#nx-add-inv-item');
+      if(addRowBtn){
+        addRowBtn.onclick = () => {
+          if(productList.length){
+            rows.push({ productId: productList[0].id, qty: 1, price: Number(productList[0].price) || 0 });
+            render();
+          }
+        };
+      }
+
+      f.onsubmit = async e => {
+        e.preventDefault();
+        const customerId = Number(selectedCustomerId || customers[0]?.id);
+        const customer = customers.find(c => Number(c.id) === customerId);
+
+        if(!customer){
+          toast('Invoice failed', 'Select a customer.');
+          return;
+        }
+
+        const validItems = rows.filter(r => r.productId && r.qty > 0);
+        if(!validItems.length){
+          toast('Invoice failed', 'Add at least one item.');
+          return;
+        }
+
+        const issueDate = $('#nx-inv-issue-date')?.value || today;
+        const dueDate = $('#nx-inv-due-date')?.value || in15Days;
+        const status = $('#nx-inv-status')?.value || 'due';
+        const paymentMethod = $('#nx-inv-payment-method')?.value || 'upi';
+
+        try {
+          const res = await api('/invoices', {
+            method: 'POST',
+            body: JSON.stringify({
+              customer_id: customerId,
+              status: status,
+              issue_date: issueDate,
+              due_date: dueDate,
+              tax_rate: taxRateVal,
+              discount: totals.discountAmount,
+              payment_method: paymentMethod,
+              items: validItems.map(r => ({
+                product_id: Number(r.productId),
+                quantity: Number(r.qty),
+                unit_price: Number(r.price),
+                description: productList.find(x => Number(x.id) === Number(r.productId))?.name || 'Product item'
+              }))
+            })
+          });
 
           closeModal();
+          if(typeof window.refreshAllNexusData === 'function') window.refreshAllNexusData();
+          if(window.NexusInvoices?.load) await window.NexusInvoices.load();
 
-          if(window.NexusInvoices?.load){
-            await window.NexusInvoices.load();
-          }
-
-          const invoice=
-            data.data ||
-            data.invoice ||
-            {};
-
-          const invoiceNumber=
-            invoice.invoice_number ||
-            `INV-${invoice.id || ''}`;
-
-          toast(
-            'Invoice created',
-            `${invoiceNumber} · ${money(invoice.total || calc.total)}`
-          );
-
-
-        }catch(err){
-
-          console.error(
-            'Invoice creation failed',
-            err
-          );
-
-          toast(
-            'Invoice failed',
-            err.message
-          );
+          toast('Invoice Generated', `${res.data?.invoice_number || 'Invoice'} issued for ${customer.name} · ${money(totals.total)}`);
+        } catch(err) {
+          toast('Invoice generation failed', err.message);
         }
+      };
+    }
 
-      }
-    );
+    openInvoiceForm();
+  }
 
-  updateDueVisibility();
-
-  addRow();
-
-  loadProducts();
-}
-  // SINGLE PDF OPENER — prevents duplicate tabs
+    // SINGLE PDF OPENER — prevents duplicate tabs
   if (!window.__NEXUS_PDF_HANDLER_INSTALLED) {
     window.__NEXUS_PDF_HANDLER_INSTALLED = true;
 
@@ -2292,7 +2080,7 @@ document.querySelectorAll('.switch[data-toggle]').forEach(sw=>{
     });
   }
 
-  function renderCustomersTable(){ $('#customers-table').dataset.patched='1'; $('#customers-table').innerHTML=`<table class="data-table"><thead><tr><th>Customer</th><th>Segment</th><th>Orders</th><th>Lifetime value</th><th>Last order</th><th></th></tr></thead><tbody>${customersData.map(c=>`<tr><td><div class="cell-main"><img class="nx-photo-avatar" src="${nxPhoto(c.name)}" alt=""><div><div class="cell-title">${esc(c.name)}</div><div class="cell-sub">${esc(c.email)}</div></div></div></td><td>${pillHtml(c.seg,segMeta[c.seg])}</td><td>${c.orders}</td><td>${money(c.ltv)}</td><td style="color:var(--text-mid);">${esc(c.last)}</td><td><button class="btn btn-ghost btn-sm nx-more" data-type="customer" data-id="${esc(c.email)}">•••</button></td></tr>`).join('')}</tbody></table>` }
+  function renderCustomersTable(){ $('#customers-table').dataset.patched='1'; $('#customers-table').innerHTML=`<table class="data-table"><thead><tr><th>Customer</th><th>Segment</th><th>Orders</th><th>Lifetime value</th><th>Last order</th><th></th></tr></thead><tbody>${customersData.map(c=>`<tr><td><div class="cell-main"><img class="nx-photo-avatar" src="${nxCustomerPhoto(c.name, c.email, c.id)}" alt=""><div><div class="cell-title">${esc(c.name)}</div><div class="cell-sub">${esc(c.email)}</div></div></div></td><td>${pillHtml(c.seg,segMeta[c.seg])}</td><td>${c.orders}</td><td>${money(c.ltv)}</td><td style="color:var(--text-mid);">${esc(c.last)}</td><td><button class="btn btn-ghost btn-sm nx-more" data-type="customer" data-id="${esc(c.email)}">•••</button></td></tr>`).join('')}</tbody></table>` }
 
   function downloadCsv(filename, rows){
     if(!rows || !rows.length){

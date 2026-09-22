@@ -5,6 +5,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NEXUS — Business Management</title>
+<script>
+  (function(){
+    try {
+      if (localStorage.getItem('nexus_token')) {
+        document.documentElement.classList.add('nexus-authenticated');
+      }
+    } catch(e) {}
+  })();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
@@ -22,44 +31,111 @@
   <div class="login-card">
     <div class="brand-mark">
       <svg class="nexus-toad-logo" viewBox="0 0 32 32" fill="none" aria-label="NEXUS toad logo">
-<circle cx="9" cy="9" r="5" fill="currentColor"/>
-<circle cx="23" cy="9" r="5" fill="currentColor"/>
-<path d="M4 14c0-5 5-9 12-9s12 4 12 9v4c0 6-5 10-12 10S4 24 4 18v-4Z" fill="currentColor"/>
-<circle cx="9" cy="9" r="1.7" fill="#08100B"/>
-<circle cx="23" cy="9" r="1.7" fill="#08100B"/>
-<path d="M10 19c2.8 2.1 9.2 2.1 12 0" stroke="#08100B" stroke-width="1.6" stroke-linecap="round"/>
-</svg>
+        <circle cx="9" cy="9" r="5" fill="currentColor"/>
+        <circle cx="23" cy="9" r="5" fill="currentColor"/>
+        <path d="M4 14c0-5 5-9 12-9s12 4 12 9v4c0 6-5 10-12 10S4 24 4 18v-4Z" fill="currentColor"/>
+        <circle cx="9" cy="9" r="1.7" fill="#08100B"/>
+        <circle cx="23" cy="9" r="1.7" fill="#08100B"/>
+        <path d="M10 19c2.8 2.1 9.2 2.1 12 0" stroke="#08100B" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
       <span>NEXUS</span>
     </div>
-    <h1>Welcome back</h1>
-    <p class="sub">Sign in to your workspace to manage sales, inventory and customers.</p>
-    <form id="login-form">
+
+    <!-- Auth Mode Switcher -->
+    <div class="auth-tabs" id="auth-mode-tabs">
+      <div class="auth-tab active" data-auth-mode="signin">Sign In</div>
+      <div class="auth-tab" data-auth-mode="signup">Create Account</div>
+    </div>
+
+    <!-- 1. SIGN IN FORM -->
+    <form id="login-form" class="auth-form active">
       <div class="field">
         <label for="li-email">Work email</label>
-        <input id="li-email" type="email" placeholder="you@company.com" value="admin123@nexus.com">
+        <input id="li-email" type="email" placeholder="you@company.com" value="admin123@nexus.com" required>
       </div>
       <div class="field">
         <label for="li-pass">Password</label>
-        <div class="nx-password-wrap"><input id="li-pass" type="password" placeholder="••••••••••" value="admin123">
-<button type="button" class="nx-password-toggle" id="nx-password-toggle" aria-label="Show password" title="Show password">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-<path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.7"/>
-</svg>
-</button></div>
+        <div class="nx-password-wrap">
+          <input id="li-pass" type="password" placeholder="••••••••••" value="admin123" required>
+          <button type="button" class="nx-password-toggle" id="nx-password-toggle" aria-label="Show password" title="Show password">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6Z"/><circle cx="12" cy="12" r="2.7"/>
+            </svg>
+          </button>
+        </div>
       </div>
       <div class="login-row">
         <label class="check-row"><input type="checkbox" checked> Keep me signed in</label>
-        <a class="link-muted" href="#">Forgot password?</a>
+        <a class="link-muted" id="forgot-password-link" href="#">Forgot password?</a>
       </div>
-      <button type="submit" class="btn btn-primary">Sign in</button>
+      <button type="submit" class="btn btn-primary" id="btn-signin">Sign in to Workspace</button>
     </form>
+
+    <!-- 2. CREATE ACCOUNT / SIGN UP FORM -->
+    <form id="signup-form" class="auth-form">
+      <div class="field">
+        <label for="su-name">Full Name</label>
+        <input id="su-name" type="text" placeholder="e.g. Aryan Sharma" required>
+      </div>
+      <div class="field">
+        <label for="su-email">Work Email</label>
+        <input id="su-email" type="email" placeholder="you@company.com" required>
+      </div>
+      <div class="field">
+        <label for="su-pass">Password (6+ characters)</label>
+        <div class="nx-password-wrap">
+          <input id="su-pass" type="password" placeholder="Create secure password" minlength="6" required>
+        </div>
+      </div>
+      <div class="field">
+        <label for="su-role">Workspace Role / Position</label>
+        <select id="su-role">
+          <option value="Owner" selected>Owner / Executive</option>
+          <option value="Sales Lead">Sales Lead</option>
+          <option value="Inventory Manager">Inventory Manager</option>
+          <option value="Finance Lead">Finance Lead</option>
+          <option value="Operations">Operations Lead</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary" id="btn-signup" style="margin-top:8px;">Create Enterprise Account</button>
+    </form>
+
     <div class="divider-text">or continue with</div>
     <div class="sso-row">
-      <div class="sso-btn">Google</div>
-      <div class="sso-btn">Microsoft</div>
-      <div class="sso-btn">SSO</div>
+      <button type="button" class="sso-btn" id="sso-google" title="Sign in with Google">
+        <svg viewBox="0 0 24 24" width="16" height="16">
+          <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/>
+          <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.7-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"/>
+          <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12 0 14.8s.7 5.1 1.9 7.5l3.7-2.9z"/>
+          <path fill="#34A853" d="M12 23.5c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 16.5C3.7 20.2 7.5 23.5 12 23.5z"/>
+        </svg>
+        Google
+      </button>
+      <button type="button" class="sso-btn" id="sso-github" title="Sign in with GitHub">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+        </svg>
+        GitHub
+      </button>
+      <button type="button" class="sso-btn" id="sso-microsoft" title="Sign in with Microsoft">
+        <svg viewBox="0 0 24 24" width="16" height="16">
+          <path fill="#f25022" d="M1 1h10v10H1z"/>
+          <path fill="#00a4ef" d="M1 13h10v10H1z"/>
+          <path fill="#7fba00" d="M13 1h10v10H13z"/>
+          <path fill="#ffb900" d="M13 13h10v10H13z"/>
+        </svg>
+        Microsoft
+      </button>
     </div>
-    <div class="login-foot">New to NEXUS? <a class="link-muted" href="#" style="color:var(--mango-1);font-weight:600;">Start a workspace</a></div>
+
+    <!-- Legal Links Footer -->
+    <div class="auth-legal-footer">
+      By signing in or creating an account, you agree to NEXUS<br>
+      <a data-legal-open="terms">Terms of Service</a> · 
+      <a data-legal-open="privacy">Privacy Policy</a> · 
+      <a data-legal-open="guidelines">Community Guidelines</a> · 
+      <a data-legal-open="license">Proprietary License</a>
+    </div>
   </div>
 </div>
 
@@ -373,10 +449,10 @@
 </div>
 
 <!-- Application Scripts -->
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
 <script src="js/app.js"></script>
 <script src="js/failsafe.js"></script>
-<script src="js/api.js"></script>
-<script src="js/auth.js"></script>
 <script src="js/live-data.js"></script>
 <script src="js/live-products.js"></script>
 <script src="js/live-inventory.js"></script>
@@ -386,7 +462,6 @@
 <script src="js/password-toggle.js"></script>
 <script src="js/converter-guard.js"></script>
 <script src="js/legal.js"></script>
-<script src="js/login-safety.js"></script>
 <script src="js/invoices-backend.js"></script>
 <script src="js/deals-backend.js"></script>
 <script src="js/live-dashboard.js"></script>
