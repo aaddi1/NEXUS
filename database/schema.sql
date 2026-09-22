@@ -5,6 +5,9 @@ CREATE TABLE users (
     password_hash TEXT NOT NULL,
     role VARCHAR(50) DEFAULT 'member',
     workspace_type VARCHAR(50) DEFAULT 'enterprise',
+    company_name VARCHAR(150),
+    phone VARCHAR(30),
+    is_active BOOLEAN DEFAULT TRUE,
     last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

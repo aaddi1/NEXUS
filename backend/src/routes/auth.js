@@ -20,7 +20,7 @@ router.post('/login', async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT id, name, email, password_hash, role
+      `SELECT id, name, email, password_hash, role, workspace_type, is_active, company_name
        FROM users
        WHERE LOWER(email) = LOWER($1)`,
       [email]
@@ -35,6 +35,13 @@ router.post('/login', async (req, res) => {
 
     const user = result.rows[0];
 
+    if (user.is_active === false) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been deactivated/suspended. Please contact Super Admin Aryan Sharma.'
+      });
+    }
+
     const validPassword = await bcrypt.compare(
       password,
       user.password_hash
@@ -47,14 +54,18 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    // Update last accessed
+    await pool.query('UPDATE users SET last_accessed = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
+
     const token = jwt.sign(
       {
         id: user.id,
         email: user.email,
-        role: user.role
+        role: user.role,
+        workspace_type: user.workspace_type
       },
       JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '30d' }
     );
 
     res.json({
@@ -65,12 +76,14 @@ router.post('/login', async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        workspace_type: user.workspace_type,
+        company_name: user.company_name,
+        is_active: user.is_active
       }
     });
   } catch (error) {
-    console.error(error);
-
+    console.error('Login error:', error);
     res.status(500).json({
       success: false,
       message: 'Login failed'

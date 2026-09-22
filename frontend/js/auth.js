@@ -1,5 +1,5 @@
 /* =========================================================
-   NEXUS — AUTHENTICATION & SESSION PERSISTENCE ENGINE
+   NEXUS — AUTHENTICATION, RBAC & SSO PERSISTENCE ENGINE
    Handles Email Login, Registration, and Google/GitHub/Microsoft SSO
    ========================================================= */
 
@@ -36,8 +36,12 @@
     const avatarEl = document.querySelector('.side-foot .user-mini');
     const topAvatarEl = document.querySelector('.topbar-avatar');
 
+    const roleName = user.role === 'superadmin' ? 'Super Admin' :
+                     user.role === 'Owner' ? 'Enterprise Owner' :
+                     user.role === 'Shop Owner' ? 'Shop Owner' : (user.role || 'Member');
+
     if (userNameEl) userNameEl.textContent = user.name || 'Aryan Sharma';
-    if (userRoleEl) userRoleEl.textContent = user.role || 'Owner';
+    if (userRoleEl) userRoleEl.textContent = roleName;
 
     const initials = (user.name || 'AS')
       .split(' ')
@@ -48,6 +52,10 @@
 
     if (avatarEl) avatarEl.textContent = initials;
     if (topAvatarEl) topAvatarEl.textContent = initials;
+
+    if (typeof window.updateSuperAdminNav === 'function') {
+      window.updateSuperAdminNav();
+    }
   }
 
   function setAuthenticated(token, user) {
@@ -67,7 +75,11 @@
     }
 
     if (typeof window.goto === 'function') {
-      window.goto('dashboard');
+      if (user.role === 'superadmin') {
+        window.goto('superadmin');
+      } else {
+        window.goto('dashboard');
+      }
     }
   }
 
@@ -186,30 +198,32 @@
       try {
         if (typeof toast === 'function') toast('SSO Authenticating', `Connecting via ${provider}...`);
 
-        const res = await fetch(`${API}/auth/login`, {
+        const res = await fetch(`${API}/auth/sso`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: 'admin123@nexus.com', password: 'admin123' })
+          body: JSON.stringify({
+            provider,
+            name: defaultName,
+            email: defaultEmail,
+            role: defaultRole
+          })
         });
         const data = await res.json().catch(() => ({}));
 
-        if (res.ok && data.token) {
-          const ssoUser = {
-            ...data.user,
-            name: `${defaultName} (${provider})`,
-            role: defaultRole
-          };
-          setAuthenticated(data.token, ssoUser);
-          if (typeof toast === 'function') toast('SSO Connected', `Signed in seamlessly via ${provider}`);
+        if (!res.ok || !data.success) {
+          throw new Error(data.message || 'SSO authentication failed');
         }
+
+        setAuthenticated(data.token, data.user);
+        if (typeof toast === 'function') toast('SSO Connected', `Signed in via ${provider} as ${data.user.name}`);
       } catch (err) {
         if (typeof toast === 'function') toast('SSO Error', err.message);
       }
     }
 
-    if (ssoGoogle) ssoGoogle.onclick = () => handleSsoLogin('Google', 'Aryan Sharma', 'aryan.sharma@gmail.com', 'Executive Lead');
-    if (ssoGithub) ssoGithub.onclick = () => handleSsoLogin('GitHub', 'aaddi1', 'aaddi1@github.com', 'System Architect');
-    if (ssoMicrosoft) ssoMicrosoft.onclick = () => handleSsoLogin('Microsoft', 'Aryan Sharma', 'aryan@microsoft.com', 'Enterprise Owner');
+    if (ssoGoogle) ssoGoogle.onclick = () => handleSsoLogin('Google', 'Aryan Sharma', 'aryan.sharma@gmail.com', 'superadmin');
+    if (ssoGithub) ssoGithub.onclick = () => handleSsoLogin('GitHub', 'aaddi1', 'aaddi1@github.com', 'superadmin');
+    if (ssoMicrosoft) ssoMicrosoft.onclick = () => handleSsoLogin('Microsoft', 'Enterprise Manager', 'owner@enterprise.in', 'Owner');
   }
 
   window.NexusAuth = {

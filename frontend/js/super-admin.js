@@ -1,7 +1,7 @@
 /* =========================================================
    NEXUS — ARYAN SHARMA SUPER ADMIN CONTROL CENTER
-   Platform User Management, Password Resets, Bug Tracker,
-   and Support Complaints Resolution Engine.
+   Platform User Management, Password Resets, Account Deactivation,
+   Bug Tracker, and Support Complaints Resolution Engine.
    ========================================================= */
 
 (function () {
@@ -9,6 +9,14 @@
 
   function esc(v) {
     return String(v ?? '').replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
+  }
+
+  function isSuperAdminUser() {
+    const user = (typeof NexusAuth !== 'undefined' ? NexusAuth.getUser() : null) || {};
+    const email = String(user.email || '').toLowerCase();
+    const role = String(user.role || '').toLowerCase();
+    const ws = String(user.workspace_type || '').toLowerCase();
+    return role === 'superadmin' || email === 'aryan@nexus.com' || email === 'admin123@nexus.com' || ws === 'system';
   }
 
   let adminData = {
@@ -21,6 +29,7 @@
   let activeAdminTab = 'complaints';
 
   async function loadSuperAdminData() {
+    if (!isSuperAdminUser()) return;
     if (!window.NexusAPI || !localStorage.getItem('nexus_token')) return;
 
     try {
@@ -43,6 +52,8 @@
   }
 
   function renderSuperAdminScreen() {
+    if (!isSuperAdminUser()) return;
+
     let screen = document.getElementById('screen-superadmin');
     if (!screen) {
       screen = document.createElement('div');
@@ -64,7 +75,7 @@
             <span>🛡️</span> Super Admin Control Portal · Aryan Sharma
           </div>
           <h1 style="font-size:24px;">Platform Command & Tech Operations</h1>
-          <p style="color:var(--text-mid);font-size:13.5px;">Manage platform users, reset credentials, resolve client complaints, and monitor live system diagnostics.</p>
+          <p style="color:var(--text-mid);font-size:13.5px;">Manage platform users, reset credentials, deactivate suspended IDs, resolve client complaints, and monitor live system diagnostics.</p>
         </div>
         <div class="head-actions">
           <button type="button" class="btn btn-ghost btn-sm" id="nx-admin-refresh">🔄 Refresh Diagnostics</button>
@@ -102,7 +113,7 @@
       <!-- ADMIN TABS NAVIGATION -->
       <div class="chip-tabs" style="margin-bottom:18px;max-width:480px;">
         <div class="chip-tab ${activeAdminTab==='complaints'?'active':''}" data-admin-tab="complaints">Complaints Inbox (${adminData.complaints.filter(c=>c.status==='open').length})</div>
-        <div class="chip-tab ${activeAdminTab==='users'?'active':''}" data-admin-tab="users">Users & Password Resets (${adminData.users.length})</div>
+        <div class="chip-tab ${activeAdminTab==='users'?'active':''}" data-admin-tab="users">Users & Security Control (${adminData.users.length})</div>
         <div class="chip-tab ${activeAdminTab==='bugs'?'active':''}" data-admin-tab="bugs">System Bugs (${adminData.bugs.filter(b=>b.status==='open').length})</div>
       </div>
 
@@ -172,8 +183,8 @@
         <div class="panel">
           <div class="panel-head">
             <div>
-              <h3>Platform Users & Security Credentials</h3>
-              <div class="sub">Direct password reset control and workspace role management.</div>
+              <h3>Platform Users, Security & Account Suspension</h3>
+              <div class="sub">Direct password reset control, account deactivation, and workspace role governance.</div>
             </div>
           </div>
           <div class="table-wrap">
@@ -183,19 +194,19 @@
                   <th>User</th>
                   <th>Workspace Type</th>
                   <th>Role</th>
-                  <th>Orders / Spend</th>
+                  <th>Status</th>
                   <th>Last Accessed</th>
-                  <th>Credentials Action</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 ${adminData.users.map(u => `
-                  <tr>
+                  <tr style="${u.is_active === false ? 'opacity:0.6;background:rgba(229,88,74,0.04);' : ''}">
                     <td>
                       <div class="cell-main">
                         <div class="avatar-sm">${typeof avatarHtml === 'function' ? avatarHtml(u.name, 'sm') : u.name[0]}</div>
                         <div>
-                          <div class="cell-title">${esc(u.name)}</div>
+                          <div class="cell-title">${esc(u.name)} ${u.is_active === false ? '<span style="color:var(--danger);font-size:11px;">(Suspended)</span>' : ''}</div>
                           <div class="cell-sub">${esc(u.email)}</div>
                         </div>
                       </div>
@@ -206,12 +217,21 @@
                       </span>
                     </td>
                     <td><strong>${esc(u.role || 'Member')}</strong></td>
-                    <td>${Number(u.total_orders)||0} orders · ${money(u.total_spent || 0)}</td>
+                    <td>
+                      <span class="pill ${u.is_active !== false ? 'pill--ok' : 'pill--danger'}">
+                        ${u.is_active !== false ? 'Active' : 'Suspended'}
+                      </span>
+                    </td>
                     <td style="color:var(--text-mid);">${u.last_accessed ? new Date(u.last_accessed).toLocaleString('en-IN') : 'Active now'}</td>
                     <td>
-                      <button type="button" class="btn btn-ghost btn-sm nx-admin-reset-pw-btn" data-user-id="${u.id}" data-user-name="${esc(u.name)}" data-user-email="${esc(u.email)}" style="padding:4px 10px;font-size:11px;color:var(--mango-1);border-color:rgba(47,167,102,0.3);">
-                        🔑 Reset Password
-                      </button>
+                      <div style="display:flex;gap:6px;">
+                        <button type="button" class="btn btn-ghost btn-sm nx-admin-reset-pw-btn" data-user-id="${u.id}" data-user-name="${esc(u.name)}" data-user-email="${esc(u.email)}" style="padding:4px 8px;font-size:11px;color:var(--mango-1);border-color:rgba(47,167,102,0.3);" title="Set new password">
+                          🔑 Reset PW
+                        </button>
+                        <button type="button" class="btn btn-ghost btn-sm nx-admin-toggle-active-btn" data-user-id="${u.id}" data-user-name="${esc(u.name)}" style="padding:4px 8px;font-size:11px;color:${u.is_active !== false ? 'var(--danger)' : 'var(--ok)'};border-color:rgba(255,255,255,0.1);" title="${u.is_active !== false ? 'Suspend User' : 'Reactivate User'}">
+                          ${u.is_active !== false ? '⛔ Deactivate' : '✓ Activate'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 `).join('')}
@@ -319,7 +339,7 @@
                   name,
                   email,
                   password,
-                  role: type === 'enterprise' ? 'Owner' : type === 'shop_owner' ? 'Shop Owner' : 'Superadmin'
+                  role: type === 'enterprise' ? 'Owner' : type === 'shop_owner' ? 'Shop Owner' : 'superadmin'
                 });
                 if (typeof closeModal === 'function') closeModal();
                 if (typeof toast === 'function') toast('Account Provisioned', `${name} (${email}) created.`);
@@ -371,6 +391,21 @@
               }
             };
           }
+        }
+      };
+    });
+
+    // Toggle Active / Deactivate Action
+    document.querySelectorAll('.nx-admin-toggle-active-btn').forEach(btn => {
+      btn.onclick = async () => {
+        const userId = btn.dataset.userId;
+        const userName = btn.dataset.userName;
+        try {
+          const res = await NexusAPI.nexusRequest(`/admin/users/${userId}/toggle-active`, { method: 'PATCH' });
+          if (typeof toast === 'function') toast('Status Updated', res.message || `Status updated for ${userName}.`);
+          loadSuperAdminData();
+        } catch (err) {
+          if (typeof toast === 'function') toast('Toggle Failed', err.message);
         }
       };
     });
@@ -433,7 +468,14 @@
 
   function injectSuperAdminNav() {
     const navScroll = document.querySelector('.nav-scroll');
-    if (!navScroll || document.querySelector('[data-screen="superadmin"]')) return;
+    const existing = document.querySelector('[data-screen="superadmin"]');
+
+    if (!isSuperAdminUser()) {
+      if (existing) existing.remove();
+      return;
+    }
+
+    if (!navScroll || existing) return;
 
     const adminNavItem = document.createElement('div');
     adminNavItem.className = 'nav-item';
@@ -456,6 +498,7 @@
   }
 
   window.loadSuperAdminData = loadSuperAdminData;
+  window.updateSuperAdminNav = injectSuperAdminNav;
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {

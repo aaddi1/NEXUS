@@ -68,6 +68,7 @@ router.get('/users', async (req, res) => {
         u.email,
         u.role,
         u.workspace_type,
+        u.is_active,
         u.last_accessed,
         u.created_at,
         COUNT(DISTINCT o.id)::int AS total_orders,
@@ -88,6 +89,39 @@ router.get('/users', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch platform users'
+    });
+  }
+});
+
+// TOGGLE USER ACTIVE / DEACTIVATED STATUS (Super Admin Action)
+router.patch('/users/:id/toggle-active', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `UPDATE users
+       SET is_active = NOT COALESCE(is_active, TRUE)
+       WHERE id = $1
+       RETURNING id, name, email, role, is_active`,
+      [req.params.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const u = result.rows[0];
+    res.json({
+      success: true,
+      message: `Account for ${u.name} is now ${u.is_active ? 'Active' : 'Deactivated / Suspended'}`,
+      data: u
+    });
+  } catch (error) {
+    console.error('Toggle active error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to toggle user status'
     });
   }
 });
