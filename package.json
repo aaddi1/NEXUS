@@ -8,7 +8,7 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node backend/tests/api.test.js",
     "start": "node backend/src/server.js",
     "dev": "nodemon backend/src/server.js"
   },

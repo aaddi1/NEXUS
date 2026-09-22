@@ -438,14 +438,17 @@
 
   window.loadEmployeeWorkspace = loadEmployeeWorkspace;
   window.adaptSidebarNavigation = adaptSidebarNavigation;
+  window.renderEmployeeScreens = renderEmployeeScreens;
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      adaptSidebarNavigation();
-      loadEmployeeWorkspace();
-    });
-  } else {
+  function init() {
+    renderEmployeeScreens();
     adaptSidebarNavigation();
     loadEmployeeWorkspace();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
   }
 })();

@@ -2184,7 +2184,35 @@ function createInvoice(){
       const d = new FormData(form);
       const report = String(d.get('report') || kind);
       const format = String(d.get('format') || 'CSV');
-      const period = String(d.get('period') || 'Today');
+      const period = String(d.get('period') || 'This month');
+
+      function isWithinPeriod(dateStr) {
+        if (!dateStr || period === 'All time') return true;
+        const dt = new Date(dateStr);
+        if (isNaN(dt.getTime())) return true;
+        const now = new Date();
+        now.setHours(23, 59, 59, 999);
+
+        const start = new Date();
+        start.setHours(0, 0, 0, 0);
+
+        if (period === 'Today') {
+          return dt >= start && dt <= now;
+        } else if (period === 'This week') {
+          start.setDate(start.getDate() - 7);
+          return dt >= start && dt <= now;
+        } else if (period === 'This month') {
+          start.setDate(1);
+          return dt >= start && dt <= now;
+        } else if (period === 'This quarter') {
+          start.setDate(start.getDate() - 90);
+          return dt >= start && dt <= now;
+        } else if (period === 'Year to date') {
+          start.setMonth(0, 1);
+          return dt >= start && dt <= now;
+        }
+        return true;
+      }
 
       let rows = [];
 
@@ -2193,18 +2221,22 @@ function createInvoice(){
           Customer: c.name || '',
           Email: c.email || '',
           Phone: c.phone || '',
+          Company: c.company || '',
+          City: c.city || '',
           Segment: c.seg || '',
           Orders: c.orders ?? 0,
           'Lifetime value': c.ltv ?? 0,
           'Last order': c.last || ''
         }));
       }
-      else if(report === 'Orders report'){
-        rows = (window.ordersData || window.orders || []).map(o => ({
+      else if(report === 'Orders report' || report === 'Sales report'){
+        const allOrders = (window.ordersData || window.orders || []);
+        rows = allOrders.filter(o => isWithinPeriod(o.created_at || o.date)).map(o => ({
           Order: o.id || o.order || '',
           Customer: o.customer || o.customer_name || '',
           Total: o.total ?? o.amount ?? 0,
-          Status: o.status || '',
+          Payment: o.payment || o.payment_status || '',
+          Fulfillment: o.status || o.fulfill || '',
           Date: o.date || o.created_at || ''
         }));
       }
@@ -2219,21 +2251,14 @@ function createInvoice(){
         }));
       }
       else if(report === 'Invoice report'){
-        rows = (window.invoicesData || window.invoices || []).map(i => ({
-          Invoice: i.invoice_number || i.number || i.id || '',
-          Customer: i.customer_name || i.customer || '',
+        const allInvoices = (window.invoicesData || window.invoices || []);
+        rows = allInvoices.filter(i => isWithinPeriod(i.issue_date || i.created_at || i.date)).map(i => ({
+          Invoice: i.invoice_number || i.number || i.num || i.id || '',
+          Customer: i.customer_name || i.customer || i.cust || '',
           Amount: i.total ?? i.amount ?? 0,
           Status: i.status || '',
-          Issued: i.issue_date || i.issued || i.created_at || '',
+          Issued: i.issue_date || i.issue || i.created_at || '',
           Due: i.due_date || i.due || ''
-        }));
-      }
-      else if(report === 'Sales report'){
-        rows = (window.dealsData || window.deals || []).map(x => ({
-          Deal: x.name || x.title || '',
-          Value: x.value ?? 0,
-          Stage: x.stage || '',
-          Owner: x.owner || ''
         }));
       }
       else{

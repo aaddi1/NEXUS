@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/database');
+const { requireSuperAdmin } = require('../middleware');
 
-// SUBMIT A COMPLAINT (Open to authenticated clients, shop owners, and admins)
+// SUBMIT A COMPLAINT (Open to any authenticated client, shop owner, employee, or admin)
 router.post('/', async (req, res) => {
   try {
     const {
@@ -55,8 +56,34 @@ router.post('/', async (req, res) => {
   }
 });
 
-// GET ALL COMPLAINTS (For Admin Portal)
-router.get('/', async (req, res) => {
+// GET PERSONAL COMPLAINTS (For logged in employee/client)
+router.get('/my', async (req, res) => {
+  try {
+    const userId = req.user ? req.user.id : null;
+    const userEmail = req.user ? req.user.email : '';
+
+    const result = await pool.query(
+      `SELECT * FROM complaints
+       WHERE user_id = $1 OR LOWER(user_email) = LOWER($2)
+       ORDER BY id DESC`,
+      [userId, userEmail]
+    );
+
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (error) {
+    console.error('Fetch my complaints error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch personal complaints'
+    });
+  }
+});
+
+// GET ALL COMPLAINTS (Restricted to Super Admin)
+router.get('/', requireSuperAdmin, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT
@@ -93,8 +120,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// RESOLVE COMPLAINT & SEND ADMIN REPLY
-router.patch('/:id/resolve', async (req, res) => {
+// RESOLVE COMPLAINT & SEND ADMIN REPLY (Restricted to Super Admin)
+router.patch('/:id/resolve', requireSuperAdmin, async (req, res) => {
   try {
     const { admin_reply = 'Resolved by Super Admin Aryan Sharma' } = req.body;
 
@@ -129,8 +156,8 @@ router.patch('/:id/resolve', async (req, res) => {
   }
 });
 
-// DELETE COMPLAINT
-router.delete('/:id', async (req, res) => {
+// DELETE COMPLAINT (Restricted to Super Admin)
+router.delete('/:id', requireSuperAdmin, async (req, res) => {
   try {
     const result = await pool.query(
       'DELETE FROM complaints WHERE id = $1 RETURNING id',

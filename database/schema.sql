@@ -8,6 +8,8 @@ CREATE TABLE users (
     company_name VARCHAR(150),
     phone VARCHAR(30),
     is_active BOOLEAN DEFAULT TRUE,
+    reset_password_token VARCHAR(255),
+    reset_password_expires TIMESTAMP,
     last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -35,6 +37,7 @@ CREATE TABLE products (
     sku VARCHAR(100) UNIQUE NOT NULL,
     category_id INTEGER REFERENCES categories(id),
     price NUMERIC(12,2) NOT NULL DEFAULT 0,
+    unit_cost NUMERIC(12,2) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -47,9 +50,23 @@ CREATE TABLE inventory (
     UNIQUE(product_id, warehouse)
 );
 
+CREATE TABLE inventory_movements (
+    id SERIAL PRIMARY KEY,
+    product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+    warehouse VARCHAR(100) NOT NULL,
+    quantity_change INTEGER NOT NULL,
+    movement_type VARCHAR(50) NOT NULL, -- 'sale', 'transfer_in', 'transfer_out', 'adjustment', 'restock'
+    reference_type VARCHAR(50),        -- 'order', 'transfer', 'manual', 'opening_stock'
+    reference_id INTEGER,
+    actor_id INTEGER REFERENCES users(id),
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE orders (
     id SERIAL PRIMARY KEY,
     customer_id INTEGER REFERENCES customers(id),
+    employee_id INTEGER REFERENCES users(id),
     status VARCHAR(50) DEFAULT 'pending',
     payment_status VARCHAR(50) DEFAULT 'pending',
     payment_method VARCHAR(50) DEFAULT 'upi',
@@ -68,7 +85,8 @@ CREATE TABLE order_items (
     order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
     product_id INTEGER REFERENCES products(id),
     quantity INTEGER NOT NULL,
-    unit_price NUMERIC(12,2) NOT NULL
+    unit_price NUMERIC(12,2) NOT NULL,
+    unit_cost NUMERIC(12,2) DEFAULT 0
 );
 
 CREATE TABLE invoices (
@@ -108,6 +126,7 @@ CREATE TABLE payments (
 CREATE TABLE deals (
     id SERIAL PRIMARY KEY,
     customer_id INTEGER REFERENCES customers(id),
+    employee_id INTEGER REFERENCES users(id),
     name VARCHAR(150) NOT NULL,
     stage VARCHAR(50) DEFAULT 'lead',
     value NUMERIC(12,2) DEFAULT 0,

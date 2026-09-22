@@ -30,19 +30,28 @@ router.get('/stats', async (req, res) => {
         ORDER BY o.id DESC
         LIMIT 5
       `),
-      // Top products by revenue/inventory value
+      // Top products by actual sales revenue and units sold
       pool.query(`
         SELECT
           p.id,
           p.name,
           p.sku,
           p.price,
-          COALESCE(SUM(i.quantity), 0)::int AS stock,
-          (COALESCE(SUM(i.quantity), 0) * p.price)::float AS value
+          COALESCE(sales.units_sold, 0)::int AS units_sold,
+          COALESCE(sales.revenue, 0)::float AS rev,
+          COALESCE(inv.stock, 0)::int AS stock
         FROM products p
-        LEFT JOIN inventory i ON i.product_id = p.id
-        GROUP BY p.id, p.name, p.sku, p.price
-        ORDER BY value DESC
+        LEFT JOIN (
+          SELECT product_id, SUM(quantity) AS units_sold, SUM(quantity * unit_price) AS revenue
+          FROM order_items
+          GROUP BY product_id
+        ) sales ON sales.product_id = p.id
+        LEFT JOIN (
+          SELECT product_id, SUM(quantity) AS stock
+          FROM inventory
+          GROUP BY product_id
+        ) inv ON inv.product_id = p.id
+        ORDER BY rev DESC, units_sold DESC
         LIMIT 5
       `),
       // Recent activities feed

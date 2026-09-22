@@ -139,6 +139,12 @@ router.post('/register', async (req, res) => {
     const cleanEmail = email.trim().toLowerCase();
     const cleanName = name.trim();
 
+    // Prevent privilege escalation on public registration
+    let safeRole = role.trim();
+    let safeWorkspace = workspace_type.trim();
+    if (safeRole.toLowerCase() === 'superadmin') safeRole = 'Owner';
+    if (safeWorkspace.toLowerCase() === 'system') safeWorkspace = 'enterprise';
+
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
@@ -146,7 +152,7 @@ router.post('/register', async (req, res) => {
       `INSERT INTO users (name, email, password_hash, role, workspace_type, company_name, is_active)
        VALUES ($1, $2, $3, $4, $5, $6, TRUE)
        RETURNING id, name, email, role, workspace_type, company_name, is_active, created_at`,
-      [cleanName, cleanEmail, passwordHash, role.trim(), workspace_type.trim(), company_name.trim() || null]
+      [cleanName, cleanEmail, passwordHash, safeRole, safeWorkspace, company_name.trim() || null]
     );
 
     const user = result.rows[0];
@@ -178,6 +184,84 @@ router.post('/register', async (req, res) => {
       success: false,
       message: 'Registration failed'
     });
+  }
+});
+
+// FORGOT PASSWORD REQUEST
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email is required' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const crypto = require('crypto');
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 3600000); // 1 hour
+
+    const result = await pool.query(
+      `UPDATE users
+       SET reset_password_token = $1,
+           reset_password_expires = $2
+       WHERE LOWER(email) = $3
+       RETURNING id, name, email`,
+      [resetToken, expires, cleanEmail]
+    );
+
+    // Return generic message regardless of email existence for security
+    res.json({
+      success: true,
+      message: 'If an account exists with this email, password reset instructions have been generated.',
+      reset_token: result.rows.length > 0 ? resetToken : null
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ success: false, message: 'Failed to process password reset request' });
+  }
+});
+
+// RESET PASSWORD SUBMIT
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, new_password } = req.body;
+
+    if (!token || !new_password) {
+      return res.status(400).json({ success: false, message: 'Token and new password are required' });
+    }
+
+    if (new_password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(new_password, salt);
+
+    const result = await pool.query(
+      `UPDATE users
+       SET password_hash = $1,
+           reset_password_token = NULL,
+           reset_password_expires = NULL
+       WHERE reset_password_token = $2 AND reset_password_expires > CURRENT_TIMESTAMP
+       RETURNING id, name, email`,
+      [passwordHash, token]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired password reset token'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Password reset successfully for ${result.rows[0].email}`
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ success: false, message: 'Failed to reset password' });
   }
 });
 

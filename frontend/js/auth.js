@@ -61,6 +61,7 @@
   function setAuthenticated(token, user) {
     localStorage.setItem('nexus_token', token);
     localStorage.setItem('nexus_user', JSON.stringify(user));
+    document.documentElement.classList.add('nexus-authenticated');
 
     const loginView = document.getElementById('view-login');
     const appView = document.getElementById('view-app');
@@ -74,12 +75,19 @@
       window.refreshAllNexusData();
     }
 
-    if (typeof window.goto === 'function') {
-      if (user.role === 'superadmin') {
-        window.goto('superadmin');
-      } else {
-        window.goto('dashboard');
-      }
+    const email = String(user.email || '').toLowerCase();
+    const role = String(user.role || '').toLowerCase();
+    const isSuper = role === 'superadmin' || email === 'aryan@nexus.com' || email === 'admin123@nexus.com';
+
+    if (isSuper) {
+      if (typeof window.loadSuperAdminData === 'function') window.loadSuperAdminData();
+      if (typeof window.goto === 'function') window.goto('superadmin');
+    } else if (role === 'owner') {
+      if (typeof window.goto === 'function') window.goto('dashboard');
+    } else {
+      if (typeof window.adaptSidebarNavigation === 'function') window.adaptSidebarNavigation();
+      if (typeof window.loadEmployeeWorkspace === 'function') window.loadEmployeeWorkspace();
+      if (typeof window.goto === 'function') window.goto('emp-dashboard');
     }
   }
 
@@ -88,6 +96,8 @@
     if (!token) return;
 
     const user = getUser();
+    document.documentElement.classList.add('nexus-authenticated');
+
     const loginView = document.getElementById('view-login');
     const appView = document.getElementById('view-app');
 
@@ -98,6 +108,17 @@
 
     if (typeof window.refreshAllNexusData === 'function') {
       window.refreshAllNexusData();
+    }
+
+    const email = String(user?.email || '').toLowerCase();
+    const role = String(user?.role || '').toLowerCase();
+    const isSuper = role === 'superadmin' || email === 'aryan@nexus.com' || email === 'admin123@nexus.com';
+
+    if (isSuper) {
+      if (typeof window.loadSuperAdminData === 'function') window.loadSuperAdminData();
+    } else if (role !== 'owner') {
+      if (typeof window.adaptSidebarNavigation === 'function') window.adaptSidebarNavigation();
+      if (typeof window.loadEmployeeWorkspace === 'function') window.loadEmployeeWorkspace();
     }
   }
 

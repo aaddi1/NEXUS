@@ -1434,6 +1434,19 @@ router.patch('/:id/status', async (req, res) => {
       });
     }
 
+    // Automatically synchronize payments ledger on paid status
+    if (status === 'paid') {
+      try {
+        await pool.query(
+          `INSERT INTO payments (invoice_id, amount, payment_method, payment_status)
+           VALUES ($1, $2, COALESCE($3, 'upi'), 'completed')`,
+          [req.params.id, result.rows[0].total, result.rows[0].payment_method || 'upi']
+        );
+      } catch (payErr) {
+        console.warn('Payment sync notice:', payErr.message);
+      }
+    }
+
     res.json({
       success: true,
       message: 'Invoice status updated',

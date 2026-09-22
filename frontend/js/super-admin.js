@@ -499,14 +499,17 @@
 
   window.loadSuperAdminData = loadSuperAdminData;
   window.updateSuperAdminNav = injectSuperAdminNav;
+  window.renderSuperAdminScreen = renderSuperAdminScreen;
+
+  function init() {
+    renderSuperAdminScreen();
+    injectSuperAdminNav();
+    loadSuperAdminData();
+  }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      injectSuperAdminNav();
-      setTimeout(loadSuperAdminData, 300);
-    });
+    document.addEventListener('DOMContentLoaded', init);
   } else {
-    injectSuperAdminNav();
-    setTimeout(loadSuperAdminData, 300);
+    init();
   }
 })();

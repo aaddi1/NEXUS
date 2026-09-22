@@ -18,16 +18,19 @@ router.get('/', async (req, res) => {
         o.tax_amount,
         o.total,
         o.notes,
+        o.employee_id,
         o.created_at,
         c.name AS customer,
         c.email AS customer_email,
         c.phone AS customer_phone,
         c.company AS customer_company,
+        u.name AS sales_person,
         COUNT(oi.id)::int AS items_count
       FROM orders o
       LEFT JOIN customers c ON c.id = o.customer_id
+      LEFT JOIN users u ON u.id = o.employee_id
       LEFT JOIN order_items oi ON oi.order_id = o.id
-      GROUP BY o.id, c.id
+      GROUP BY o.id, c.id, u.id
       ORDER BY o.id DESC
     `);
 
@@ -48,11 +51,13 @@ router.get('/:id', async (req, res) => {
       SELECT
         o.id,
         o.customer_id,
+        o.employee_id,
         c.name AS customer,
         c.email AS customer_email,
         c.phone AS customer_phone,
         c.company AS customer_company,
         c.city AS customer_city,
+        u.name AS sales_person,
         o.status,
         o.payment_status,
         o.payment_method,
@@ -66,6 +71,7 @@ router.get('/:id', async (req, res) => {
         o.created_at
       FROM orders o
       LEFT JOIN customers c ON c.id = o.customer_id
+      LEFT JOIN users u ON u.id = o.employee_id
       WHERE o.id = $1
     `, [req.params.id]);
 
@@ -84,6 +90,7 @@ router.get('/:id', async (req, res) => {
         p.sku,
         oi.quantity,
         oi.unit_price,
+        oi.unit_cost,
         oi.quantity * oi.unit_price AS subtotal
       FROM order_items oi
       JOIN products p ON p.id = oi.product_id
@@ -107,7 +114,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// CREATE ORDER (WITH OPTIONAL INSTANT INVOICE & INVENTORY ADJUSTMENT)
+// CREATE ORDER WITH ATOMIC STOCK ROW LOCKING, MOVEMENT LEDGER, AND OPTIONAL INVOICE
 router.post('/', async (req, res) => {
   const client = await pool.connect();
 
@@ -122,6 +129,7 @@ router.post('/', async (req, res) => {
       discount = 0,
       tax_rate = 0,
       notes = '',
+      employee_id,
       generate_invoice = false
     } = req.body;
 
@@ -131,6 +139,8 @@ router.post('/', async (req, res) => {
         message: 'Customer and order items are required'
       });
     }
+
+    const assignedEmployeeId = employee_id || (req.user ? req.user.id : null);
 
     await client.query('BEGIN');
 
@@ -150,12 +160,13 @@ router.post('/', async (req, res) => {
     let rawSubtotal = 0;
     const resolvedItems = [];
 
+    // Step 1: Validate stock with SELECT ... FOR UPDATE (Prevents Overselling)
     for (const item of items) {
       const productId = Number(item.product_id);
       const quantity = Math.max(1, Number(item.quantity) || 1);
 
       const product = await client.query(
-        'SELECT id, name, sku, price FROM products WHERE id = $1',
+        'SELECT id, name, sku, price, unit_cost FROM products WHERE id = $1',
         [productId]
       );
 
@@ -167,7 +178,26 @@ router.post('/', async (req, res) => {
         });
       }
 
+      // Lock warehouse stock row
+      const stockRow = await client.query(
+        `SELECT quantity FROM inventory
+         WHERE product_id = $1 AND warehouse = $2
+         FOR UPDATE`,
+        [productId, warehouse]
+      );
+
+      const availableStock = stockRow.rows.length > 0 ? Number(stockRow.rows[0].quantity) : 0;
+
+      if (availableStock < quantity) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient stock for "${product.rows[0].name}" in ${warehouse} warehouse. Available: ${availableStock}, Requested: ${quantity}.`
+        });
+      }
+
       const unitPrice = Number(item.unit_price !== undefined ? item.unit_price : product.rows[0].price);
+      const unitCost = Number(product.rows[0].unit_cost || 0);
       const lineTotal = unitPrice * quantity;
       rawSubtotal += lineTotal;
 
@@ -177,6 +207,7 @@ router.post('/', async (req, res) => {
         sku: product.rows[0].sku,
         quantity,
         unit_price: unitPrice,
+        unit_cost: unitCost,
         subtotal: lineTotal
       });
     }
@@ -187,14 +218,15 @@ router.post('/', async (req, res) => {
     const taxAmount = Math.round(taxableAmount * (taxRatePercent / 100) * 100) / 100;
     const finalTotal = Math.round((taxableAmount + taxAmount) * 100) / 100;
 
-    // 1. Insert Order
+    // Step 2: Insert Order
     const orderResult = await client.query(
       `INSERT INTO orders
-       (customer_id, status, payment_status, payment_method, warehouse, subtotal, discount, tax_rate, tax_amount, total, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       (customer_id, employee_id, status, payment_status, payment_method, warehouse, subtotal, discount, tax_rate, tax_amount, total, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
         customer_id,
+        assignedEmployeeId,
         status,
         payment_status,
         payment_method,
@@ -210,26 +242,41 @@ router.post('/', async (req, res) => {
 
     const orderId = orderResult.rows[0].id;
 
-    // 2. Insert Order Items & Adjust Inventory
+    // Step 3: Insert Order Items, Decrement Inventory & Record Movements Ledger
     for (const item of resolvedItems) {
       await client.query(
         `INSERT INTO order_items
-         (order_id, product_id, quantity, unit_price)
-         VALUES ($1, $2, $3, $4)`,
-        [orderId, item.product_id, item.quantity, item.unit_price]
+         (order_id, product_id, quantity, unit_price, unit_cost)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [orderId, item.product_id, item.quantity, item.unit_price, item.unit_cost]
       );
 
-      // Decrement warehouse stock safely if record exists
+      // Decrement warehouse stock
       await client.query(
         `UPDATE inventory
-         SET quantity = GREATEST(0, quantity - $1),
+         SET quantity = quantity - $1,
              updated_at = CURRENT_TIMESTAMP
          WHERE product_id = $2 AND warehouse = $3`,
         [item.quantity, item.product_id, warehouse]
       );
+
+      // Record in permanent inventory movements ledger
+      await client.query(
+        `INSERT INTO inventory_movements
+         (product_id, warehouse, quantity_change, movement_type, reference_type, reference_id, actor_id, notes)
+         VALUES ($1, $2, $3, 'sale', 'order', $4, $5, $6)`,
+        [
+          item.product_id,
+          warehouse,
+          -(item.quantity),
+          orderId,
+          assignedEmployeeId,
+          `Sale for order #NX-${orderId} (${customer.rows[0].name})`
+        ]
+      );
     }
 
-    // 3. Optional: Auto-generate Tax Invoice
+    // Step 4: Optional Instant Invoice & Payment Record
     let generatedInvoice = null;
     if (generate_invoice) {
       const sequence = await client.query(
@@ -266,6 +313,15 @@ router.post('/', async (req, res) => {
         );
       }
 
+      // Record payment transaction if paid
+      if (payment_status === 'paid') {
+        await client.query(
+          `INSERT INTO payments (invoice_id, amount, payment_method, payment_status)
+           VALUES ($1, $2, $3, 'completed')`,
+          [invoiceId, finalTotal.toFixed(2), payment_method]
+        );
+      }
+
       generatedInvoice = {
         id: invoiceId,
         invoice_number: invoiceNumber,
@@ -292,8 +348,7 @@ router.post('/', async (req, res) => {
     console.error('Create order error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to create order',
-      error: error.message
+      message: error.message || 'Failed to create order'
     });
   } finally {
     client.release();

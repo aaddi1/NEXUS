@@ -13,7 +13,12 @@ const adminRoutes = require('./routes/admin');
 const employeesRoutes = require('./routes/employees');
 const financialsRoutes = require('./routes/financials');
 const authRoutes = require('./routes/auth');
-const { authenticateToken } = require('./middleware');
+const {
+  authenticateToken,
+  requireSuperAdmin,
+  requireFounderOrAdmin,
+  rateLimit
+} = require('./middleware');
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
@@ -30,13 +35,13 @@ app.use('/api/products', authenticateToken, productsRoutes);
 app.use('/api/categories', authenticateToken, categoriesRoutes);
 app.use('/api/inventory', authenticateToken, inventoryRoutes);
 app.use('/api/orders', authenticateToken, ordersRoutes);
-app.use('/api/team', authenticateToken, teamRoutes);
+app.use('/api/team', authenticateToken, requireFounderOrAdmin, teamRoutes);
 app.use('/api/notifications', authenticateToken, notificationsRoutes);
 app.use('/api/dashboard', authenticateToken, dashboardRoutes);
 app.use('/api/complaints', authenticateToken, complaintsRoutes);
-app.use('/api/admin', authenticateToken, adminRoutes);
+app.use('/api/admin', authenticateToken, requireSuperAdmin, adminRoutes);
 app.use('/api/employees', authenticateToken, employeesRoutes);
-app.use('/api/financials', authenticateToken, financialsRoutes);
+app.use('/api/financials', authenticateToken, requireFounderOrAdmin, financialsRoutes);
 app.use(
   '/api/invoices',
   (req, res, next) => {
@@ -49,7 +54,7 @@ app.use(
   invoicesRoutes
 );
 app.use('/api/deals', authenticateToken, dealsRoutes);
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', rateLimit({ windowMs: 60000, max: 60 }), authRoutes);
 app.get('/api/health', async (req, res) => {
   try {
     const result = await pool.query('SELECT NOW() AS time');
