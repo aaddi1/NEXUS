@@ -19,6 +19,7 @@
         const login=document.getElementById('view-login'), app=document.getElementById('view-app');
         if(login) login.style.display='none';
         if(app) app.classList.add('active');
+        if(typeof window.refreshAllNexusData==='function') window.refreshAllNexusData();
         if(typeof window.goto==='function') window.goto('dashboard');
       }catch(err){alert('Sign in failed: '+err.message)}
     });

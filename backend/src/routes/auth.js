@@ -78,4 +78,86 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// REGISTER
+router.post('/register', async (req, res) => {
+  try {
+    const { name, email, password, role = 'member' } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, email and password are required'
+      });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    const result = await pool.query(
+      `INSERT INTO users (name, email, password_hash, role)
+       VALUES ($1, LOWER($2), $3, $4)
+       RETURNING id, name, email, role, created_at`,
+      [name.trim(), email.trim(), passwordHash, role.trim()]
+    );
+
+    const user = result.rows[0];
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'Registration successful',
+      token,
+      user
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+
+    if (error.code === '23505') {
+      return res.status(409).json({
+        success: false,
+        message: 'Email is already registered'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Registration failed'
+    });
+  }
+});
+
+// GET CURRENT AUTH USER
+router.get('/me', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    const result = await pool.query(
+      'SELECT id, name, email, role, created_at FROM users WHERE id = $1',
+      [decoded.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.json({
+      success: true,
+      user: result.rows[0]
+    });
+  } catch (error) {
+    return res.status(401).json({ success: false, message: 'Invalid token' });
+  }
+});
+
 module.exports = router;

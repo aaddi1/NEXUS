@@ -2375,6 +2375,7 @@ document.querySelectorAll('.switch[data-toggle]').forEach(sw=>{
 
       $('#view-login').style.display='none';
       $('#view-app').classList.add('active');
+      if(typeof window.refreshAllNexusData==='function') window.refreshAllNexusData();
       goto('dashboard');
 
       toast('Welcome to NEXUS',`Signed in as ${result.user.name}.`);
@@ -2393,6 +2394,77 @@ document.querySelectorAll('.switch[data-toggle]').forEach(sw=>{
   });
 
   /* Topbar search + notifications + avatar */
+  function notificationPage(){
+    let notifScreen = document.getElementById('screen-notifications');
+    if(!notifScreen){
+      notifScreen = document.createElement('div');
+      notifScreen.id = 'screen-notifications';
+      notifScreen.className = 'screen';
+      notifScreen.innerHTML = `
+        <div class="page-head">
+          <div>
+            <h1>Notifications</h1>
+            <p>Real-time operational updates, stock alerts, and billing notifications.</p>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="nx-notify-list"></div>
+        </div>
+      `;
+      const mainCol = document.querySelector('.main-col');
+      if(mainCol) mainCol.appendChild(notifScreen);
+    }
+
+    const list = notifScreen.querySelector('.nx-notify-list');
+    if(!list) return;
+
+    if(window.NEXUS_LIVE_NOTIFICATIONS && window.NEXUS_LIVE_NOTIFICATIONS.length){
+      list.innerHTML = window.NEXUS_LIVE_NOTIFICATIONS.map(n => `
+        <div class="nx-notify ${n.unread ? 'unread' : ''}" data-goto-screen="${n.screen || 'dashboard'}">
+          <div class="nx-notify-dot"></div>
+          <div>
+            <p><strong>${esc(n.title)}</strong> — ${esc(n.message)}</p>
+            <small>${esc(n.time)}</small>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      list.innerHTML = `
+        <div class="nx-notify" data-goto-screen="inventory">
+          <div class="nx-notify-dot"></div>
+          <div>
+            <p><strong>System initialized</strong> — All NEXUS services connected to PostgreSQL database.</p>
+            <small>Active</small>
+          </div>
+        </div>
+      `;
+    }
+
+    list.querySelectorAll('[data-goto-screen]').forEach(el => {
+      el.onclick = () => goto(el.dataset.gotoScreen);
+    });
+
+    if(window.NexusAPI?.notifications){
+      NexusAPI.notifications().then(res => {
+        if(res.success && Array.isArray(res.data) && res.data.length){
+          window.NEXUS_LIVE_NOTIFICATIONS = res.data;
+          list.innerHTML = res.data.map(n => `
+            <div class="nx-notify ${n.unread ? 'unread' : ''}" data-goto-screen="${n.screen || 'dashboard'}">
+              <div class="nx-notify-dot"></div>
+              <div>
+                <p><strong>${esc(n.title)}</strong> — ${esc(n.message)}</p>
+                <small>${esc(n.time)}</small>
+              </div>
+            </div>
+          `).join('');
+          list.querySelectorAll('[data-goto-screen]').forEach(el => {
+            el.onclick = () => goto(el.dataset.gotoScreen);
+          });
+        }
+      }).catch(()=>{});
+    }
+  }
+
   const topSearch=$('.topbar .search-wrap input');if(topSearch){topSearch.addEventListener('focus',()=>globalSearch(topSearch.value));topSearch.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();globalSearch(topSearch.value)}})}
   const topIcons=$$('.topbar .icon-btn');if(topIcons[0])topIcons[0].onclick=()=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));notificationPage();$('#screen-notifications').classList.add('active');$('#topbar-title').textContent='Notifications';window.scrollTo(0,0)};
   const calculatorBtn=$('#nexus-calculator-btn');

@@ -161,6 +161,52 @@ const NexusAPI = {
     return nexusRequest(`/deals/${id}`, {
       method: 'DELETE'
     });
+  },
+
+  categories() {
+    return nexusRequest('/categories');
+  },
+
+  createCategory(name) {
+    return nexusRequest('/categories', {
+      method: 'POST',
+      body: JSON.stringify({ name })
+    });
+  },
+
+  deleteCategory(id) {
+    return nexusRequest(`/categories/${id}`, {
+      method: 'DELETE'
+    });
+  },
+
+  team() {
+    return nexusRequest('/team');
+  },
+
+  addTeamMember(member) {
+    return nexusRequest('/team', {
+      method: 'POST',
+      body: JSON.stringify(member)
+    });
+  },
+
+  deleteTeamMember(id) {
+    return nexusRequest(`/team/${id}`, {
+      method: 'DELETE'
+    });
+  },
+
+  notifications() {
+    return nexusRequest('/notifications');
+  },
+
+  dashboardStats() {
+    return nexusRequest('/dashboard/stats');
+  },
+
+  getMe() {
+    return nexusRequest('/auth/me');
   }
 };
 

@@ -1,6 +1,10 @@
--- USERS
+-- USERS / TEAM
 INSERT INTO users (name, email, password_hash, role) VALUES
-('Aryan Sharma', 'admin123@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'admin')
+('Aryan Sharma', 'admin123@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'Owner'),
+('Riya Mehta', 'riya@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'Sales Lead'),
+('Rahul Kapoor', 'rahul@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'Inventory Manager'),
+('Arjun Verma', 'arjun@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'Finance Lead'),
+('Priya Nair', 'priya@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'Sales')
 ON CONFLICT (email) DO NOTHING;
 
 -- CATEGORIES
@@ -144,6 +148,44 @@ SELECT id, 'INV-2026-003', 'overdue', CURRENT_DATE - 20, CURRENT_DATE - 5, 650
 FROM customers WHERE email = 'priya.nair@example.com'
 LIMIT 1;
 
+
+-- ORDER ITEMS
+INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+SELECT o.id, p.id, 1, 3200
+FROM orders o, products p
+WHERE o.total = 3200 AND p.sku = 'NX-MNG-001'
+LIMIT 1;
+
+INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+SELECT o.id, p.id, 1, 1800
+FROM orders o, products p
+WHERE o.total = 1800 AND p.sku = 'NX-CFE-001'
+LIMIT 1;
+
+INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+SELECT o.id, p.id, 1, 650
+FROM orders o, products p
+WHERE o.total = 650 AND p.sku = 'NX-DRY-001'
+LIMIT 1;
+
+-- INVOICE ITEMS
+INSERT INTO invoice_items (invoice_id, product_id, description, quantity, unit_price)
+SELECT i.id, p.id, 'Alphonso Mango Crate - Premium Export Quality', 1, 3200
+FROM invoices i, products p
+WHERE i.invoice_number = 'INV-2026-001' AND p.sku = 'NX-MNG-001'
+LIMIT 1;
+
+INSERT INTO invoice_items (invoice_id, product_id, description, quantity, unit_price)
+SELECT i.id, p.id, 'Filter Coffee Concentrate 1L Bottle', 1, 1800
+FROM invoices i, products p
+WHERE i.invoice_number = 'INV-2026-002' AND p.sku = 'NX-CFE-001'
+LIMIT 1;
+
+INSERT INTO invoice_items (invoice_id, product_id, description, quantity, unit_price)
+SELECT i.id, p.id, 'Kaju Badam Dry Fruits Mixed Pack', 1, 650
+FROM invoices i, products p
+WHERE i.invoice_number = 'INV-2026-003' AND p.sku = 'NX-DRY-001'
+LIMIT 1;
 
 -- DEALS
 INSERT INTO deals

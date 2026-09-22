@@ -1,9 +1,13 @@
 const customersRoutes = require('./routes/customers');
 const productsRoutes = require('./routes/products');
+const categoriesRoutes = require('./routes/categories');
 const inventoryRoutes = require('./routes/inventory');
 const ordersRoutes = require('./routes/orders');
 const invoicesRoutes = require('./routes/invoices');
 const dealsRoutes = require('./routes/deals');
+const teamRoutes = require('./routes/team');
+const notificationsRoutes = require('./routes/notifications');
+const dashboardRoutes = require('./routes/dashboard');
 const authRoutes = require('./routes/auth');
 const { authenticateToken } = require('./middleware');
 const express = require('express');
@@ -19,8 +23,12 @@ app.use(cors());
 app.use(express.json());
 app.use('/api/customers', authenticateToken, customersRoutes);
 app.use('/api/products', authenticateToken, productsRoutes);
+app.use('/api/categories', authenticateToken, categoriesRoutes);
 app.use('/api/inventory', authenticateToken, inventoryRoutes);
 app.use('/api/orders', authenticateToken, ordersRoutes);
+app.use('/api/team', authenticateToken, teamRoutes);
+app.use('/api/notifications', authenticateToken, notificationsRoutes);
+app.use('/api/dashboard', authenticateToken, dashboardRoutes);
 app.use(
   '/api/invoices',
   (req, res, next) => {
