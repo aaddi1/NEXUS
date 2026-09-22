@@ -26,6 +26,11 @@
   function logout() {
     localStorage.removeItem('nexus_token');
     localStorage.removeItem('nexus_user');
+    document.documentElement.classList.remove('nexus-authenticated');
+    const emailInput = document.getElementById('li-email');
+    const passInput = document.getElementById('li-pass');
+    if (emailInput) emailInput.value = '';
+    if (passInput) passInput.value = '';
     window.location.reload();
   }
 

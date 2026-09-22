@@ -457,12 +457,6 @@ document.querySelectorAll('.switch[data-toggle]').forEach(sw=>{
   const $$ = s => [...document.querySelectorAll(s)];
   const esc = s => String(s ?? '').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 
-  /* Login credentials requested for the frontend demo. Backend auth will replace this later. */
-  const DEMO_EMAIL='admin123@nexus.com', DEMO_PASS='admin123';
-  /* Real profile/company images for team/customer/product avatars. */const emailInput=$('#li-email'), passInput=$('#li-pass');
-  if(emailInput) emailInput.value=DEMO_EMAIL;
-  if(passInput) passInput.value=DEMO_PASS;
-
   document.body.insertAdjacentHTML('beforeend', `
     <div class="modal-backdrop" id="nx-modal-backdrop">
       <div class="nx-modal" id="nx-modal">
