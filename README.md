@@ -1,5 +1,9 @@
 # NEXUS — Enterprise Operations & Intelligence Platform
 
+[![GitHub](https://img.shields.io/badge/GitHub-aaddi1-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/aaddi1)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-aryan--sharma11-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/aryan-sharma11/)
+[![Instagram](https://img.shields.io/badge/Instagram-aryansharma.dev-E4405F?style=flat-square&logo=instagram&logoColor=white)](https://www.instagram.com/aryansharma.dev/)
+[![X](https://img.shields.io/badge/X-Follow-000000?style=flat-square&logo=x&logoColor=white)](https://x.com/aaddi1)
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Express.js](https://img.shields.io/badge/Express-5.x-000000?style=flat-square&logo=express&logoColor=white)](https://expressjs.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15%2B-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
@@ -395,6 +399,18 @@ Access the application in your browser at `http://localhost:8001`.
 2. **Cryptographic Signatures**: Public invoice documents require an HMAC-SHA256 digest matching the document identifier.
 3. **Constant-Time Verification**: Signature evaluations utilize `crypto.timingSafeEqual` with buffer length validation to protect against side-channel timing attacks.
 4. **Isolated Token Storage**: Client tokens are managed with standard Bearer authorization schemes.
+
+---
+
+## Author & Connect
+
+**Aryan Sharma**
+
+- **GitHub**: [@aaddi1](https://github.com/aaddi1)
+- **LinkedIn**: [Aryan Sharma](https://www.linkedin.com/in/aryan-sharma11/)
+- **Instagram**: [@aryansharma.dev](https://www.instagram.com/aryansharma.dev/)
+- **X (Twitter)**: [@aaddi1](https://x.com/aaddi1)
+- **Email**: [aryan@nexus.com](mailto:aryan@nexus.com)
 
 ---
 
