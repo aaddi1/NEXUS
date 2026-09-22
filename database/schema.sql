@@ -47,7 +47,14 @@ CREATE TABLE orders (
     customer_id INTEGER REFERENCES customers(id),
     status VARCHAR(50) DEFAULT 'pending',
     payment_status VARCHAR(50) DEFAULT 'pending',
+    payment_method VARCHAR(50) DEFAULT 'upi',
+    warehouse VARCHAR(100) DEFAULT 'Mumbai',
+    subtotal NUMERIC(12,2) DEFAULT 0,
+    discount NUMERIC(12,2) DEFAULT 0,
+    tax_rate NUMERIC(5,2) DEFAULT 0,
+    tax_amount NUMERIC(12,2) DEFAULT 0,
     total NUMERIC(12,2) NOT NULL DEFAULT 0,
+    notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

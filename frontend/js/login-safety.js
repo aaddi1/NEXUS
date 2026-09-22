@@ -9,7 +9,10 @@
       e.preventDefault();
       const email=(document.getElementById('li-email')?.value||'').trim();
       const password=document.getElementById('li-pass')?.value||'';
-      if(!email||!password){alert('Email and password are required.');return;}
+      if(!email||!password){
+        if(typeof toast === 'function') toast('Sign in required', 'Email and password are required.');
+        return;
+      }
       try{
         const r=await fetch('http://localhost:5000/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
         const data=await r.json();
@@ -21,7 +24,9 @@
         if(app) app.classList.add('active');
         if(typeof window.refreshAllNexusData==='function') window.refreshAllNexusData();
         if(typeof window.goto==='function') window.goto('dashboard');
-      }catch(err){alert('Sign in failed: '+err.message)}
+      }catch(err){
+        if(typeof toast === 'function') toast('Sign in failed', err.message);
+      }
     });
   });
 })();

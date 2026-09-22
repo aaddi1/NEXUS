@@ -10,17 +10,30 @@ router.get('/', async (req, res) => {
         o.id,
         o.status,
         o.payment_status,
+        o.payment_method,
+        o.warehouse,
+        o.subtotal,
+        o.discount,
+        o.tax_rate,
+        o.tax_amount,
         o.total,
+        o.notes,
         o.created_at,
-        c.name AS customer
+        c.name AS customer,
+        c.email AS customer_email,
+        c.phone AS customer_phone,
+        c.company AS customer_company,
+        COUNT(oi.id)::int AS items_count
       FROM orders o
       LEFT JOIN customers c ON c.id = o.customer_id
+      LEFT JOIN order_items oi ON oi.order_id = o.id
+      GROUP BY o.id, c.id
       ORDER BY o.id DESC
     `);
 
     res.json({ success: true, data: result.rows });
   } catch (error) {
-    console.error(error);
+    console.error('Fetch orders error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch orders'
@@ -36,9 +49,20 @@ router.get('/:id', async (req, res) => {
         o.id,
         o.customer_id,
         c.name AS customer,
+        c.email AS customer_email,
+        c.phone AS customer_phone,
+        c.company AS customer_company,
+        c.city AS customer_city,
         o.status,
         o.payment_status,
+        o.payment_method,
+        o.warehouse,
+        o.subtotal,
+        o.discount,
+        o.tax_rate,
+        o.tax_amount,
         o.total,
+        o.notes,
         o.created_at
       FROM orders o
       LEFT JOIN customers c ON c.id = o.customer_id
@@ -57,6 +81,7 @@ router.get('/:id', async (req, res) => {
         oi.id,
         oi.product_id,
         p.name AS product,
+        p.sku,
         oi.quantity,
         oi.unit_price,
         oi.quantity * oi.unit_price AS subtotal
@@ -74,7 +99,7 @@ router.get('/:id', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error(error);
+    console.error('Fetch order detail error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch order'
@@ -82,7 +107,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// CREATE ORDER
+// CREATE ORDER (WITH OPTIONAL INSTANT INVOICE & INVENTORY ADJUSTMENT)
 router.post('/', async (req, res) => {
   const client = await pool.connect();
 
@@ -91,14 +116,16 @@ router.post('/', async (req, res) => {
       customer_id,
       items,
       status = 'pending',
-      payment_status = 'pending'
+      payment_status = 'pending',
+      payment_method = 'upi',
+      warehouse = 'Mumbai',
+      discount = 0,
+      tax_rate = 0,
+      notes = '',
+      generate_invoice = false
     } = req.body;
 
-    if (
-      !customer_id ||
-      !Array.isArray(items) ||
-      items.length === 0
-    ) {
+    if (!customer_id || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
         success: false,
         message: 'Customer and order items are required'
@@ -108,91 +135,165 @@ router.post('/', async (req, res) => {
     await client.query('BEGIN');
 
     const customer = await client.query(
-      'SELECT id FROM customers WHERE id = $1',
+      'SELECT id, name, email, phone, company, city FROM customers WHERE id = $1',
       [customer_id]
     );
 
     if (customer.rows.length === 0) {
       await client.query('ROLLBACK');
-
       return res.status(404).json({
         success: false,
         message: 'Customer not found'
       });
     }
 
-    let total = 0;
+    let rawSubtotal = 0;
+    const resolvedItems = [];
 
     for (const item of items) {
-      if (!item.product_id || !item.quantity || item.quantity <= 0) {
-        await client.query('ROLLBACK');
-
-        return res.status(400).json({
-          success: false,
-          message: 'Each item needs a valid product and quantity'
-        });
-      }
+      const productId = Number(item.product_id);
+      const quantity = Math.max(1, Number(item.quantity) || 1);
 
       const product = await client.query(
-        'SELECT id, price FROM products WHERE id = $1',
-        [item.product_id]
+        'SELECT id, name, sku, price FROM products WHERE id = $1',
+        [productId]
       );
 
       if (product.rows.length === 0) {
         await client.query('ROLLBACK');
-
         return res.status(404).json({
           success: false,
-          message: `Product ${item.product_id} not found`
+          message: `Product ID ${productId} not found`
         });
       }
 
-      const unitPrice = Number(product.rows[0].price);
-      total += unitPrice * Number(item.quantity);
+      const unitPrice = Number(item.unit_price !== undefined ? item.unit_price : product.rows[0].price);
+      const lineTotal = unitPrice * quantity;
+      rawSubtotal += lineTotal;
+
+      resolvedItems.push({
+        product_id: productId,
+        product_name: product.rows[0].name,
+        sku: product.rows[0].sku,
+        quantity,
+        unit_price: unitPrice,
+        subtotal: lineTotal
+      });
     }
 
-    const order = await client.query(
+    const discountAmount = Math.max(0, Number(discount) || 0);
+    const taxableAmount = Math.max(0, rawSubtotal - discountAmount);
+    const taxRatePercent = Math.max(0, Math.min(100, Number(tax_rate) || 0));
+    const taxAmount = Math.round(taxableAmount * (taxRatePercent / 100) * 100) / 100;
+    const finalTotal = Math.round((taxableAmount + taxAmount) * 100) / 100;
+
+    // 1. Insert Order
+    const orderResult = await client.query(
       `INSERT INTO orders
-       (customer_id, status, payment_status, total)
-       VALUES ($1, $2, $3, $4)
+       (customer_id, status, payment_status, payment_method, warehouse, subtotal, discount, tax_rate, tax_amount, total, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
-      [customer_id, status, payment_status, total]
+      [
+        customer_id,
+        status,
+        payment_status,
+        payment_method,
+        warehouse,
+        rawSubtotal.toFixed(2),
+        discountAmount.toFixed(2),
+        taxRatePercent,
+        taxAmount.toFixed(2),
+        finalTotal.toFixed(2),
+        notes || null
+      ]
     );
 
-    const orderId = order.rows[0].id;
+    const orderId = orderResult.rows[0].id;
 
-    for (const item of items) {
-      const product = await client.query(
-        'SELECT price FROM products WHERE id = $1',
-        [item.product_id]
-      );
-
+    // 2. Insert Order Items & Adjust Inventory
+    for (const item of resolvedItems) {
       await client.query(
         `INSERT INTO order_items
          (order_id, product_id, quantity, unit_price)
          VALUES ($1, $2, $3, $4)`,
+        [orderId, item.product_id, item.quantity, item.unit_price]
+      );
+
+      // Decrement warehouse stock safely if record exists
+      await client.query(
+        `UPDATE inventory
+         SET quantity = GREATEST(0, quantity - $1),
+             updated_at = CURRENT_TIMESTAMP
+         WHERE product_id = $2 AND warehouse = $3`,
+        [item.quantity, item.product_id, warehouse]
+      );
+    }
+
+    // 3. Optional: Auto-generate Tax Invoice
+    let generatedInvoice = null;
+    if (generate_invoice) {
+      const sequence = await client.query(
+        `SELECT nextval('nexus_invoice_seq') AS number`
+      );
+
+      const invoiceNumber = `NEXUS-INV-${new Date().getFullYear()}-${String(sequence.rows[0].number).padStart(5, '0')}`;
+      const invoiceStatus = payment_status === 'paid' ? 'paid' : 'due';
+
+      const invoiceResult = await client.query(
+        `INSERT INTO invoices
+         (customer_id, invoice_number, status, issue_date, due_date, total, tax_rate, discount, payment_method)
+         VALUES ($1, $2, $3, CURRENT_DATE, CURRENT_DATE + INTERVAL '15 days', $4, $5, $6, $7)
+         RETURNING *`,
         [
-          orderId,
-          item.product_id,
-          item.quantity,
-          product.rows[0].price
+          customer_id,
+          invoiceNumber,
+          invoiceStatus,
+          finalTotal.toFixed(2),
+          taxRatePercent,
+          discountAmount.toFixed(2),
+          payment_method
         ]
       );
+
+      const invoiceId = invoiceResult.rows[0].id;
+
+      for (const item of resolvedItems) {
+        await client.query(
+          `INSERT INTO invoice_items
+           (invoice_id, product_id, description, quantity, unit_price)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [invoiceId, item.product_id, item.product_name, item.quantity, item.unit_price]
+        );
+      }
+
+      generatedInvoice = {
+        id: invoiceId,
+        invoice_number: invoiceNumber,
+        status: invoiceStatus,
+        total: finalTotal
+      };
     }
 
     await client.query('COMMIT');
 
     res.status(201).json({
       success: true,
-      data: order.rows[0]
+      message: 'Order created successfully',
+      data: {
+        ...orderResult.rows[0],
+        customer_name: customer.rows[0].name,
+        items: resolvedItems,
+        invoice: generatedInvoice
+      }
     });
+
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error(error);
-
+    console.error('Create order error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to create order'
+      message: 'Failed to create order',
+      error: error.message
     });
   } finally {
     client.release();
@@ -225,7 +326,7 @@ router.patch('/:id/status', async (req, res) => {
       data: result.rows[0]
     });
   } catch (error) {
-    console.error(error);
+    console.error('Update order error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update order'
