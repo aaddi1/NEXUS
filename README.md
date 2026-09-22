@@ -392,9 +392,24 @@ python3 -m http.server 8001
 
 Access the application in your browser at `http://localhost:8001`.
 
-#### Default Credentials (Seeded):
-- **Email**: `admin123@nexus.com`
-- **Password**: `admin123`
+#### Default Seeded Credentials:
+- **Super Admin (Aryan Sharma)**: `aryan@nexus.com` / `admin123` (or `admin123@nexus.com` / `admin123`)
+- **Enterprise Company Owner**: `reliance@nexus.com` / `admin123`
+- **Retail Shop Owner**: `shopowner@nexus.com` / `admin123`
+
+---
+
+## Portals & Role Breakdown
+
+### 1. Aryan Sharma Super Admin Control Center (`#screen-superadmin`)
+- **Direct Password Resets**: Provision new accounts and directly reset/overwrite forgotten credentials for any client, company owner, or employee.
+- **Support & Complaints Dispatch Center**: Live inbox of all submitted complaints and inquiries with direct "Reply & Resolve" capabilities.
+- **System Diagnostics HUD**: Real-time monitoring of CPU cores, RAM allocation, PostgreSQL ACID connection pool health, and FastAPI AI engine uptime.
+- **Bug Tracker & Error Log**: Triage component exceptions, log resolutions, and manage runtime status.
+
+### 2. Enterprise Company & Shop Owner Portal
+- **Operational Suite**: Live KPI cards, Sales Pipeline (Deals CRM), Product Catalog, Multi-Warehouse Stock Tracking, Dual-Mode Discount Orders (`₹` / `%`), and Vector PDF Invoices with HMAC-SHA256 QR Authenticity.
+- **Universal Help & Complaint Beacon**: Floating help button available across all screens allowing clients, store managers, and admins to report technical glitches, billing questions, or stock desyncs directly to Aryan Sharma.
 
 ---
 

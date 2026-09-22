@@ -1,10 +1,13 @@
 -- USERS / TEAM
-INSERT INTO users (name, email, password_hash, role) VALUES
-('Aryan Sharma', 'admin123@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'Owner'),
-('Riya Mehta', 'riya@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'Sales Lead'),
-('Rahul Kapoor', 'rahul@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'Inventory Manager'),
-('Arjun Verma', 'arjun@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'Finance Lead'),
-('Priya Nair', 'priya@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'Sales')
+INSERT INTO users (name, email, password_hash, role, workspace_type) VALUES
+('Aryan Sharma', 'aryan@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'superadmin', 'system'),
+('Aryan Sharma', 'admin123@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'superadmin', 'enterprise'),
+('Reliance Enterprise Owner', 'reliance@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'Owner', 'enterprise'),
+('Local Retail Shop Owner', 'shopowner@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'Shop Owner', 'shop_owner'),
+('Riya Mehta', 'riya@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'Sales Lead', 'enterprise'),
+('Rahul Kapoor', 'rahul@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'Inventory Manager', 'enterprise'),
+('Arjun Verma', 'arjun@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'Finance Lead', 'enterprise'),
+('Priya Nair', 'priya@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'Sales', 'enterprise')
 ON CONFLICT (email) DO NOTHING;
 
 -- CATEGORIES
@@ -205,3 +208,17 @@ INSERT INTO deals
 SELECT id, 'Masala & More Retail Deal', 'qualified', 45000, 50
 FROM customers WHERE email = 'priya.nair@example.com'
 LIMIT 1;
+
+-- COMPLAINTS / HELP DESK TICKETS
+INSERT INTO complaints (user_name, user_email, company, type, subject, message, priority, status) VALUES
+('Riya Mehta', 'riya.mehta@example.com', 'Aarav Organics', 'Billing & Invoice Issue', 'GST computation clarification on export items', 'We need assistance with zero-rated GST entries on export mango shipments to UAE.', 'high', 'open'),
+('Arjun Verma', 'arjun.verma@example.com', 'Bharat Brew Co.', 'Stock / Warehouse Desync', 'Stock count mismatch during Delhi transfer', 'After transfer #TRF-8821, Delhi depot inventory took 2 minutes to show updated quantity.', 'medium', 'open'),
+('Shop Owner Rajesh', 'rajesh@kirana.in', 'Rajesh Supermart', 'Feature Request / Feedback', 'Request for barcode scanner support at POS', 'Would love to have instant barcode scanning on the Create Order screen.', 'normal', 'open'),
+('Priya Nair', 'priya.nair@example.com', 'Masala & More', 'Account & Access', 'Password reset request for regional executive', 'Need password reset assistance for our south region sales executive.', 'high', 'resolved');
+
+-- BUG REPORTS / SYSTEM DIAGNOSTICS
+INSERT INTO bug_reports (user_email, component, error_message, severity, status) VALUES
+('system_monitor@nexus.com', 'PostgreSQL Pool', 'Temporary latency spike during bulk invoice PDF generation', 'normal', 'resolved'),
+('riya.mehta@example.com', 'PDFKit Exporter', 'Currency symbol alignment on landscape invoice format', 'low', 'open'),
+('rahul@nexus.com', 'FastAPI Engine', 'Cache warm-up required on 30-day forecast OLS regression', 'normal', 'resolved');
+

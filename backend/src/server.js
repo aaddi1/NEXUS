@@ -8,6 +8,8 @@ const dealsRoutes = require('./routes/deals');
 const teamRoutes = require('./routes/team');
 const notificationsRoutes = require('./routes/notifications');
 const dashboardRoutes = require('./routes/dashboard');
+const complaintsRoutes = require('./routes/complaints');
+const adminRoutes = require('./routes/admin');
 const authRoutes = require('./routes/auth');
 const { authenticateToken } = require('./middleware');
 const express = require('express');
@@ -29,6 +31,8 @@ app.use('/api/orders', authenticateToken, ordersRoutes);
 app.use('/api/team', authenticateToken, teamRoutes);
 app.use('/api/notifications', authenticateToken, notificationsRoutes);
 app.use('/api/dashboard', authenticateToken, dashboardRoutes);
+app.use('/api/complaints', authenticateToken, complaintsRoutes);
+app.use('/api/admin', authenticateToken, adminRoutes);
 app.use(
   '/api/invoices',
   (req, res, next) => {

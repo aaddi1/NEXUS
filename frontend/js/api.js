@@ -207,6 +207,50 @@ var NexusAPI = {
 
   getMe() {
     return nexusRequest('/auth/me');
+  },
+
+  submitComplaint(data) {
+    return nexusRequest('/complaints', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  complaints() {
+    return nexusRequest('/complaints');
+  },
+
+  resolveComplaint(id, admin_reply) {
+    return nexusRequest(`/complaints/${id}/resolve`, {
+      method: 'PATCH',
+      body: JSON.stringify({ admin_reply })
+    });
+  },
+
+  adminStats() {
+    return nexusRequest('/admin/stats');
+  },
+
+  adminUsers() {
+    return nexusRequest('/admin/users');
+  },
+
+  adminResetPassword(user_id, new_password) {
+    return nexusRequest('/admin/users/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ user_id, new_password })
+    });
+  },
+
+  adminBugs() {
+    return nexusRequest('/admin/bugs');
+  },
+
+  adminResolveBug(id, status) {
+    return nexusRequest(`/admin/bugs/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status })
+    });
   }
 };
 
