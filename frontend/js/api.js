@@ -128,6 +128,39 @@ const NexusAPI = {
       method: 'POST',
       body: JSON.stringify(product)
     });
+  },
+
+  updateProduct(id, product) {
+    return nexusRequest(`/products/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(product)
+    });
+  },
+
+  deleteProduct(id) {
+    return nexusRequest(`/products/${id}`, {
+      method: 'DELETE'
+    });
+  },
+
+  createDeal(deal) {
+    return nexusRequest('/deals', {
+      method: 'POST',
+      body: JSON.stringify(deal)
+    });
+  },
+
+  updateDeal(id, deal) {
+    return nexusRequest(`/deals/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(deal)
+    });
+  },
+
+  deleteDeal(id) {
+    return nexusRequest(`/deals/${id}`, {
+      method: 'DELETE'
+    });
   }
 };
 

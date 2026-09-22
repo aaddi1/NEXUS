@@ -95,7 +95,7 @@ router.post('/', async (req, res) => {
        (name, email, phone, company, city)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [name, email, phone, company, city]
+      [name, email || null, phone || null, company || null, city || null]
     );
 
     res.status(201).json({
@@ -125,7 +125,7 @@ router.put('/:id', async (req, res) => {
            city = $5
        WHERE id = $6
        RETURNING *`,
-      [name, email, phone, company, city, req.params.id]
+      [name, email || null, phone || null, company || null, city || null, req.params.id]
     );
 
     if (result.rows.length === 0) {

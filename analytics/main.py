@@ -159,13 +159,23 @@ def product_demand():
             p.id,
             p.name,
             p.sku,
-            COALESCE(SUM(oi.quantity), 0) AS units_sold,
-            COALESCE(SUM(oi.quantity * oi.unit_price), 0)::float AS revenue,
-            COALESCE(SUM(i.quantity), 0) AS stock
+            COALESCE(sales.units_sold, 0) AS units_sold,
+            COALESCE(sales.revenue, 0)::float AS revenue,
+            COALESCE(inv.stock, 0) AS stock
         FROM products p
-        LEFT JOIN order_items oi ON oi.product_id = p.id
-        LEFT JOIN inventory i ON i.product_id = p.id
-        GROUP BY p.id, p.name, p.sku
+        LEFT JOIN (
+            SELECT product_id,
+                   SUM(quantity) AS units_sold,
+                   SUM(quantity * unit_price) AS revenue
+            FROM order_items
+            GROUP BY product_id
+        ) sales ON sales.product_id = p.id
+        LEFT JOIN (
+            SELECT product_id,
+                   SUM(quantity) AS stock
+            FROM inventory
+            GROUP BY product_id
+        ) inv ON inv.product_id = p.id
         ORDER BY units_sold DESC
     """)
 

@@ -4,21 +4,35 @@
   }
 
   try {
-    const result = await NexusAPI.products();
+    const [result, invResult] = await Promise.all([
+      NexusAPI.products(),
+      NexusAPI.inventory().catch(() => ({ success: false, data: [] }))
+    ]);
 
     if (!result.success || !Array.isArray(result.data)) {
       return;
     }
 
-    const liveProducts = result.data.map(p => ({
-      id: p.id,
-      name: p.name,
-      sku: p.sku,
-      cat: p.category || 'Uncategorized',
-      price: Number(p.price) || 0,
-      stock: 0,
-      status: 'ok'
-    }));
+    const stockMap = {};
+    if (invResult.success && Array.isArray(invResult.data)) {
+      invResult.data.forEach(item => {
+        const pid = Number(item.product_id);
+        stockMap[pid] = (stockMap[pid] || 0) + (Number(item.quantity) || 0);
+      });
+    }
+
+    const liveProducts = result.data.map(p => {
+      const stock = stockMap[Number(p.id)] !== undefined ? stockMap[Number(p.id)] : 0;
+      return {
+        id: p.id,
+        name: p.name,
+        sku: p.sku,
+        cat: p.category || 'Uncategorized',
+        price: Number(p.price) || 0,
+        stock,
+        status: stock === 0 ? 'danger' : stock < 50 ? 'warn' : 'ok'
+      };
+    });
 
     window.NEXUS_LIVE_PRODUCTS = liveProducts;
 

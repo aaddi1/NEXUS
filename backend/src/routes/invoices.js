@@ -967,12 +967,13 @@ router.get(
 
       const expected = invoiceSignature(invoiceNumber);
 
+      const sigBuf = Buffer.from(signature || '');
+      const expBuf = Buffer.from(expected || '');
+
       if (
         !signature ||
-        !crypto.timingSafeEqual(
-          Buffer.from(signature),
-          Buffer.from(expected)
-        )
+        sigBuf.length !== expBuf.length ||
+        !crypto.timingSafeEqual(sigBuf, expBuf)
       ) {
         return res.status(404).send('Invoice not found');
       }

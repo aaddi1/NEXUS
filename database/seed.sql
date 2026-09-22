@@ -1,3 +1,8 @@
+-- USERS
+INSERT INTO users (name, email, password_hash, role) VALUES
+('Aryan Sharma', 'admin123@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'admin')
+ON CONFLICT (email) DO NOTHING;
+
 -- CATEGORIES
 INSERT INTO categories (name) VALUES
 ('Fresh Produce'),

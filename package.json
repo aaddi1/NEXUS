@@ -9,8 +9,8 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "start": "node backend/src/server.js",
+    "dev": "nodemon backend/src/server.js"
   },
   "keywords": [],
   "type": "commonjs",

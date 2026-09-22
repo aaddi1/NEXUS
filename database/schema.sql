@@ -14,7 +14,8 @@ CREATE TABLE customers (
     phone VARCHAR(30),
     company VARCHAR(150),
     city VARCHAR(100),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP DEFAULT NULL
 );
 
 CREATE TABLE categories (
@@ -66,8 +67,13 @@ CREATE TABLE invoices (
     issue_date DATE NOT NULL DEFAULT CURRENT_DATE,
     due_date DATE,
     total NUMERIC(12,2) NOT NULL DEFAULT 0,
+    tax_rate NUMERIC(5,2) DEFAULT 0,
+    discount NUMERIC(12,2) DEFAULT 0,
+    payment_method VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE SEQUENCE IF NOT EXISTS nexus_invoice_seq START WITH 1000;
 
 CREATE TABLE invoice_items (
     id SERIAL PRIMARY KEY,
