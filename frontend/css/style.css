@@ -10,11 +10,18 @@
   --glass: rgba(255, 255, 255, 0.035);
   --glass-border: rgba(255, 255, 255, 0.08);
   --hair: rgba(255, 255, 255, 0.07);
+  --border: rgba(255, 255, 255, 0.08);
+  --panel: #12171D;
+  --card: #12171D;
+  --surface-2: #161C23;
+  --green: #2FA766;
+  --green-2: #7CA653;
   --mango-1: #2FA766;
   --mango-2: #1D7A4C;
   --mango-gold: #8FE3A6;
   --leaf: #7CA653;
   --leaf-deep: #4F7A34;
+  --text: #EEF2F5;
   --text-hi: #EEF2F5;
   --text-mid: #AAB4BE;
   --text-low: #6E7982;

@@ -427,15 +427,63 @@ document.querySelectorAll('.switch[data-toggle]').forEach(sw=>{
       }catch(err){toast('Could not open order',err.message)}
     }
 
+    let selectedCustomerId = null;
+
     function render(){
       openModal('Create new order','Create a real order in PostgreSQL.',formShell([
-        select('Customer','customer',customers.map(c=>c.name)),
+        `<div class="nx-field full">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <label style="margin-bottom:0;">Customer / User</label>
+            <button type="button" class="btn btn-ghost btn-sm" id="nx-order-quick-add-cust" style="padding:2px 8px;font-size:11.5px;color:var(--mango-1);border-color:rgba(47,167,102,0.3);background:rgba(47,167,102,0.08);">+ Add New Customer</button>
+          </div>
+          <select name="customer" id="nx-order-customer-select">
+            ${customers.map(c=>`<option value="${c.id}" ${Number(c.id)===Number(selectedCustomerId || customers[0]?.id)?'selected':''}>${esc(c.name)}${c.company ? ` (${esc(c.company)})` : ''}</option>`).join('')}
+            <option value="__new__">+ Add New Customer...</option>
+          </select>
+        </div>`,
         select('Payment status','payment',['Paid','Pending','Failed']),
         `<div class="nx-field full"><label>Order items</label><div class="nx-order-items" id="nx-order-items">${rows.map((r,i)=>{const p=productList.find(x=>Number(x.id)===Number(r.productId));return `<div class="nx-order-row"><select data-row-product="${i}">${productList.map(x=>`<option value="${x.id}" ${Number(x.id)===Number(r.productId)?'selected':''}>${esc(x.name)}</option>`).join('')}</select><input data-row-qty="${i}" type="number" min="1" value="${r.qty}"><span>${money(r.price*r.qty)}</span><button type="button" class="nx-remove" data-remove-row="${i}">×</button></div>`}).join('')}</div><button type="button" class="btn btn-ghost btn-sm nx-add-row" id="nx-add-order-item">+ Add product</button></div>`,
         field('Notes','notes','','text','placeholder="Optional order notes"')
       ]),`<button class="btn btn-ghost btn-sm" type="button" data-close-modal>Cancel</button>${primary('Create order')}`,true);
 
       const f=$('#nx-active-form');
+
+      function promptQuickCustomer(){
+        const name = prompt('Enter new customer / user name:');
+        if(!name || !name.trim()) return;
+        const email = prompt('Enter customer email (e.g. client@company.com):') || `${name.toLowerCase().replace(/\s+/g, '')}@example.com`;
+        const phone = prompt('Enter mobile phone (+91 format):') || '+91 98765 00000';
+
+        (async()=>{
+          try {
+            const res = await api('/customers', {
+              method: 'POST',
+              body: JSON.stringify({ name: name.trim(), email: email.trim(), phone: phone.trim(), city: 'Mumbai' })
+            });
+            if(res.success && res.data){
+              customers.unshift(res.data);
+              selectedCustomerId = res.data.id;
+              toast('Customer created', `${res.data.name} added and selected.`);
+              render();
+            }
+          } catch(err){
+            toast('Failed to add customer', err.message);
+          }
+        })();
+      }
+
+      const quickAddBtn = $('#nx-order-quick-add-cust');
+      if(quickAddBtn) quickAddBtn.onclick = (e) => { e.preventDefault(); promptQuickCustomer(); };
+
+      const custSelect = $('#nx-order-customer-select');
+      if(custSelect) custSelect.onchange = (e) => {
+        if(e.target.value === '__new__'){
+          promptQuickCustomer();
+        } else {
+          selectedCustomerId = Number(e.target.value);
+        }
+      };
+
       f.addEventListener('change',e=>{
         const pi=e.target.dataset.rowProduct;
         if(pi!==undefined){
@@ -452,14 +500,16 @@ document.querySelectorAll('.switch[data-toggle]').forEach(sw=>{
       f.onsubmit=async e=>{
         e.preventDefault();
         const d=new FormData(f);
-        const customer=customers.find(c=>c.name===d.get('customer'));
-        if(!customer){toast('Order failed','Select a valid customer.');return}
+        const custVal = d.get('customer');
+        const customer=customers.find(c=>Number(c.id)===Number(custVal) || c.name===custVal);
+        if(!customer || custVal==='__new__'){toast('Order failed','Select a valid customer.');return}
         try{
           const result=await api('/orders',{method:'POST',body:JSON.stringify({customer_id:Number(customer.id),payment_status:String(d.get('payment')).toLowerCase(),items:rows.map(r=>({product_id:Number(r.productId),quantity:Number(r.qty)}))})});
           closeModal();
+          if(typeof window.refreshAllNexusData==='function') window.refreshAllNexusData();
           await window.NexusOrders?.load?.();
           const total=result.data?.total ?? result.order?.total ?? result.total ?? rows.reduce((a,r)=>a+r.price*r.qty,0);
-          toast('Order created',`${d.get('customer')} · ${money(total)}`);
+          toast('Order created',`${customer.name} · ${money(total)}`);
         }catch(err){toast('Order failed',err.message)}
       };
     }

@@ -1,16 +1,21 @@
 # NEXUS — Enterprise Operations & Intelligence Platform
 
-[![GitHub](https://img.shields.io/badge/GitHub-aaddi1-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/aaddi1)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-aryan--sharma11-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/aryan-sharma11/)
-[![Instagram](https://img.shields.io/badge/Instagram-aryansharma.dev-E4405F?style=flat-square&logo=instagram&logoColor=white)](https://www.instagram.com/aryansharma.dev/)
-[![X](https://img.shields.io/badge/X-Follow-000000?style=flat-square&logo=x&logoColor=white)](https://x.com/aaddi1)
-[![Node.js](https://img.shields.io/badge/Node.js-v18%2B-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org/)
-[![Express.js](https://img.shields.io/badge/Express-5.x-000000?style=flat-square&logo=express&logoColor=white)](https://expressjs.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15%2B-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
-[![Three.js](https://img.shields.io/badge/Three.js-r128-black?style=flat-square&logo=three.js&logoColor=white)](https://threejs.org/)
-[![PDFKit](https://img.shields.io/badge/PDFKit-Engine-red?style=flat-square)](https://pdfkit.org/)
+<p align="center">
+  <img src="docs/assets/toad-seal.svg" alt="NEXUS Official Toad Seal" width="130" height="130" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/aaddi1"><img src="https://img.shields.io/badge/GitHub-aaddi1-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub" /></a>
+  <a href="https://www.linkedin.com/in/aryan-sharma11/"><img src="https://img.shields.io/badge/LinkedIn-aryan--sharma11-0A66C2?style=flat-square&logo=linkedin&logoColor=white" alt="LinkedIn" /></a>
+  <a href="https://www.instagram.com/aryansharma.dev/"><img src="https://img.shields.io/badge/Instagram-aryansharma.dev-E4405F?style=flat-square&logo=instagram&logoColor=white" alt="Instagram" /></a>
+  <a href="https://x.com/aaddi1"><img src="https://img.shields.io/badge/X-Follow-000000?style=flat-square&logo=x&logoColor=white" alt="X" /></a>
+  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-v18%2B-339933?style=flat-square&logo=node.js&logoColor=white" alt="Node.js" /></a>
+  <a href="https://expressjs.com/"><img src="https://img.shields.io/badge/Express-5.x-000000?style=flat-square&logo=express&logoColor=white" alt="Express" /></a>
+  <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-15%2B-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL" /></a>
+  <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-0.100%2B-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI" /></a>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python" /></a>
+  <a href="https://threejs.org/"><img src="https://img.shields.io/badge/Three.js-r128-black?style=flat-square&logo=three.js&logoColor=white" alt="Three.js" /></a>
+</p>
 
 **NEXUS** is a high-performance, modular enterprise resource planning (ERP), CRM, and business intelligence platform designed for end-to-end commercial operations. It unifies order orchestration, multi-warehouse stock management, cryptographic invoice issuance, sales pipeline tracking, and predictive demand analytics within a unified operational workspace.
 
