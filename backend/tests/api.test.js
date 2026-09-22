@@ -79,7 +79,7 @@ async function runTests() {
   await test('Super Admin Authentication (aryan@nexus.com)', async () => {
     const res = await request('/auth/login', {
       method: 'POST',
-      body: { email: 'aryan@nexus.com', password: 'admin123' }
+      body: { email: 'aryan@nexus.com', password: 'aryan123' }
     });
     assert.strictEqual(res.status, 200);
     assert.ok(res.data.token, 'Token must be present');
@@ -91,7 +91,7 @@ async function runTests() {
   await test('Employee Authentication (riya@nexus.com)', async () => {
     const res = await request('/auth/login', {
       method: 'POST',
-      body: { email: 'riya@nexus.com', password: 'admin123' }
+      body: { email: 'riya@nexus.com', password: 'riya123' }
     });
     assert.strictEqual(res.status, 200);
     assert.ok(res.data.token, 'Token must be present');

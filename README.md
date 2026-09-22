@@ -71,17 +71,18 @@ flowchart TD
 
 ## Default Seeded Credentials
 
-NEXUS includes seeded accounts configured across different workspace roles:
+NEXUS includes seeded accounts configured with unique passwords per user:
 
 | Role | Name | Email | Default Password | Workspace Type |
 |---|---|---|---|---|
-| **Super Admin & Owner** | Aryan Sharma | `aryan@nexus.com` | `admin123` | System Command (`system`) |
+| **Super Admin & Owner** | Aryan Sharma | `aryan@nexus.com` | `aryan123` | System Command (`system`) |
 | **Super Admin (Alias)** | Aryan Sharma | `admin123@nexus.com` | `admin123` | Enterprise Command (`enterprise`) |
-| **Enterprise Owner** | Reliance Enterprise | `reliance@nexus.com` | `admin123` | Enterprise ERP (`enterprise`) |
-| **Retail Shop Owner** | Retail Store Manager | `shopowner@nexus.com` | `admin123` | Retail Shop POS (`shop_owner`) |
-| **Sales Lead** | Riya Mehta | `riya@nexus.com` | `admin123` | Enterprise Employee (`enterprise`) |
-| **Inventory Manager** | Rahul Kapoor | `rahul@nexus.com` | `admin123` | Enterprise Employee (`enterprise`) |
-| **Finance Lead** | Arjun Verma | `arjun@nexus.com` | `admin123` | Enterprise Employee (`enterprise`) |
+| **Enterprise Owner** | Reliance Enterprise | `reliance@nexus.com` | `reliance123` | Enterprise ERP (`enterprise`) |
+| **Retail Shop Owner** | Retail Store Manager | `shopowner@nexus.com` | `shopowner123` | Retail Shop POS (`shop_owner`) |
+| **Sales Lead** | Riya Mehta | `riya@nexus.com` | `riya123` | Enterprise Employee (`enterprise`) |
+| **Inventory Manager** | Rahul Kapoor | `rahul@nexus.com` | `rahul123` | Enterprise Employee (`enterprise`) |
+| **Finance Lead** | Arjun Verma | `arjun@nexus.com` | `arjun123` | Enterprise Employee (`enterprise`) |
+| **Sales Executive** | Priya Nair | `priya@nexus.com` | `priya123` | Enterprise Employee (`enterprise`) |
 
 ---
 

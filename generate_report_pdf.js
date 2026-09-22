@@ -167,12 +167,13 @@ testCases.forEach(tc => {
 
 drawSectionHeading('6', 'DEFAULT SEEDED CREDENTIALS REFERENCE');
 doc.moveDown(0.2);
-drawBullet('Super Admin (Aryan Sharma)', 'aryan@nexus.com / admin123 (or admin123@nexus.com / admin123)');
-drawBullet('Enterprise Company Owner', 'reliance@nexus.com / admin123');
-drawBullet('Retail Shop Owner', 'shopowner@nexus.com / admin123');
-drawBullet('Sales Lead (Employee)', 'riya@nexus.com / admin123');
-drawBullet('Inventory Manager (Employee)', 'rahul@nexus.com / admin123');
-drawBullet('Finance Lead (Employee)', 'arjun@nexus.com / admin123');
+drawBullet('Super Admin (Aryan Sharma)', 'aryan@nexus.com / aryan123 (or admin123@nexus.com / admin123)');
+drawBullet('Enterprise Company Owner', 'reliance@nexus.com / reliance123');
+drawBullet('Retail Shop Owner', 'shopowner@nexus.com / shopowner123');
+drawBullet('Sales Lead (Employee)', 'riya@nexus.com / riya123');
+drawBullet('Inventory Manager (Employee)', 'rahul@nexus.com / rahul123');
+drawBullet('Finance Lead (Employee)', 'arjun@nexus.com / arjun123');
+drawBullet('Sales Executive (Employee)', 'priya@nexus.com / priya123');
 
 // Footer page numbers on all pages
 const totalPages = doc.bufferedPageRange().count;

@@ -1,14 +1,14 @@
 -- USERS / TEAM
 INSERT INTO users (name, email, password_hash, role, workspace_type) VALUES
-('Aryan Sharma', 'aryan@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'superadmin', 'system'),
-('Aryan Sharma', 'admin123@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'superadmin', 'enterprise'),
-('Reliance Enterprise Owner', 'reliance@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'Owner', 'enterprise'),
-('Local Retail Shop Owner', 'shopowner@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'Shop Owner', 'shop_owner'),
-('Riya Mehta', 'riya@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'Sales Lead', 'enterprise'),
-('Rahul Kapoor', 'rahul@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'Inventory Manager', 'enterprise'),
-('Arjun Verma', 'arjun@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'Finance Lead', 'enterprise'),
-('Priya Nair', 'priya@nexus.com', '$2b$10$H6ykvcLYkWO9K/c7AOlHqO8FRFvhVKrHRqtCBmvTBXUFzKerIUyAe', 'Sales', 'enterprise')
-ON CONFLICT (email) DO NOTHING;
+('Aryan Sharma', 'aryan@nexus.com', '$2b$10$1JnUPBiwd89sxtd0K4l4LOTs7pmtHap5MBLRROe/BLVr6fDtDb8EW', 'superadmin', 'system'),
+('Aryan Sharma', 'admin123@nexus.com', '$2b$10$M1zWh0T4Qs36b2Gcd0Ipv.TkogNiZjRt0WMHZun7gvhTpyzLJ3VfS', 'superadmin', 'enterprise'),
+('Reliance Enterprise Owner', 'reliance@nexus.com', '$2b$10$/eRnZksNa391GUYQ3pNMlecYts1mwXWH.ZpPvfkOMmbDc.nXdxCT6', 'Owner', 'enterprise'),
+('Local Retail Shop Owner', 'shopowner@nexus.com', '$2b$10$RG3J1KobCGCvdQzF4VDrSeh0y8K4wHB7rVYNyAhY.5WS.B7CVNqcG', 'Shop Owner', 'shop_owner'),
+('Riya Mehta', 'riya@nexus.com', '$2b$10$AdScLeGet36TsP8owZs0h.2pdpIq.oe/nss5VO3qMUO6p8qvSlbkW', 'Sales Lead', 'enterprise'),
+('Rahul Kapoor', 'rahul@nexus.com', '$2b$10$ODJLSK3TZFY0rYD7QUr4bO4UoIGXZHRqCQ67N63H9IYPSJOGLn9Mu', 'Inventory Manager', 'enterprise'),
+('Arjun Verma', 'arjun@nexus.com', '$2b$10$5aN4EEUi3xORfiHhff.RcOOBS.nhR.9yt080JTJEjLUEfaA/pbVDW', 'Finance Lead', 'enterprise'),
+('Priya Nair', 'priya@nexus.com', '$2b$10$LJfRdah9uy426.NAHm/GdOxdkw9OG61J.EInAgHcKgyAsQAO2w9Ie', 'Sales', 'enterprise')
+ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash;
 
 -- CATEGORIES
 INSERT INTO categories (name) VALUES
