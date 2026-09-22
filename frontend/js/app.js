@@ -1394,33 +1394,55 @@ function createInvoice(){
 </td></tr>`).join('')}</tbody></table>` }
 
   async function newDeal(){
-    openModal('New deal','Add an opportunity to the sales pipeline.',formShell([
-      field('Deal name','name','','text','required placeholder="e.g. Annual supply contract"'),
-      field('Account','acct','','text','required placeholder="Customer / company"'),
-      field('Value','value','0','number','min="0" step="1"'),
-      select('Stage','stage',['Discovery','Proposal','Negotiation','Closed won']),
-      field('Owner','owner','Aryan Sharma'),
-      field('Close date','close','2026-09-30','date')
-    ]), `<button class="btn btn-ghost btn-sm" type="button" data-close-modal>Cancel</button>${primary('Create deal')}`);
-    $('#nx-active-form').onsubmit=async e=>{
+    const cList = Array.isArray(customersData) && customersData.length ? customersData : (window.NEXUS_LIVE_CUSTOMERS || []);
+    
+    openModal('New Sales Opportunity', 'Add an enterprise deal to the revenue pipeline.', formShell([
+      field('Deal Name *', 'name', '', 'text', 'required placeholder="e.g. Reliance Fresh Annual Contract"'),
+      `<div class="nx-field"><label>Associated Customer / Account *</label><select name="customer_id" required>${cList.map(c=>`<option value="${c.id}">${esc(c.name)}${c.company ? ` (${esc(c.company)})` : ''}</option>`).join('')}</select></div>`,
+      field('Contract Value (₹) *', 'value', '250000', 'number', 'min="0" step="1000" required'),
+      select('Pipeline Stage', 'stage', ['Discovery (25%)', 'Proposal (50%)', 'Negotiation (75%)', 'Closed won (100%)']),
+      field('Deal Owner', 'owner', 'Aryan Sharma', 'text'),
+      field('Expected Close Date', 'close', new Date(Date.now() + 30*86400000).toISOString().slice(0,10), 'date')
+    ]), `<button class="btn btn-ghost btn-sm" type="button" data-close-modal>Cancel</button>${primary('Create Deal')}`);
+
+    $('#nx-active-form').onsubmit = async e => {
       e.preventDefault();
-      const d=new FormData(e.target);
-      const name=String(d.get('name')||'').trim(), acct=String(d.get('acct')||'').trim();
-      if(!name||!acct){toast('Deal failed','Deal name and account are required.');return}
+      const d = new FormData(e.target);
+      const name = String(d.get('name') || '').trim();
+      const customerId = Number(d.get('customer_id') || cList[0]?.id || 1);
+      const value = Number(d.get('value')) || 0;
+      const stageRaw = String(d.get('stage') || 'Discovery');
+
+      const stageKey = stageRaw.includes('Closed won') ? 'closed_won' :
+                       stageRaw.includes('Negotiation') ? 'negotiation' :
+                       stageRaw.includes('Proposal') ? 'proposal' : 'lead';
+
+      const prob = stageKey === 'closed_won' ? 100 : stageKey === 'negotiation' ? 75 : stageKey === 'proposal' ? 50 : 25;
+
+      if(!name){
+        toast('Deal validation', 'Deal name is required.');
+        return;
+      }
+
       try{
-        const customers=window.NexusAPI?.customers ? await NexusAPI.customers() : null;
-        const list=customers?.data||customers?.customers||customers||[];
-        const customer=list.find(c=>String(c.name||'').toLowerCase()===acct.toLowerCase()||String(c.company||'').toLowerCase()===acct.toLowerCase());
-        if(!customer){toast('Deal failed','Select an existing customer/company name.');return}
-        const stageMap={Discovery:'lead',Proposal:'proposal',Negotiation:'negotiation','Closed won':'closed_won'};
-        const token=localStorage.getItem('nexus_token');
-        const r=await fetch('http://localhost:5000/api/deals',{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify({customer_id:Number(customer.id),name,value:Number(d.get('value'))||0,stage:stageMap[d.get('stage')]||'lead',probability:d.get('stage')==='Closed won'?100:d.get('stage')==='Negotiation'?75:d.get('stage')==='Proposal'?50:25})});
-        const data=await r.json().catch(()=>({}));
-        if(!r.ok)throw new Error(data.message||'Deal API request failed');
+        const res = await NexusAPI.createDeal({
+          customer_id: customerId,
+          name,
+          value,
+          stage: stageKey,
+          probability: prob
+        });
+
+        if(!res.success) throw new Error(res.message || 'Failed to create deal.');
+
         closeModal();
+        if(typeof window.refreshAllNexusData === 'function') window.refreshAllNexusData();
         if(window.NexusDeals?.load) await window.NexusDeals.load();
-        toast('Deal created',`${name} added to the pipeline.`);
-      }catch(err){toast('Deal failed',err.message)}
+        toast('Opportunity Created', `${name} · ${money(value)} added to pipeline.`);
+      }catch(err){
+        console.error('Deal creation error:', err);
+        toast('Deal creation failed', err.message);
+      }
     };
   }
   function renderSalesTable(){ $('#sales-table').innerHTML=`<table class="data-table"><thead><tr><th>Deal</th><th>Account</th><th>Stage</th><th>Value</th><th>Owner</th><th>Close date</th><th></th></tr></thead><tbody>${dealsData.map(d=>`<tr><td><span class="cell-title">${esc(d.name)}</span></td><td>${esc(d.acct)}</td><td>${pillHtml(d.stage,stageMeta[d.stage])}</td><td>${money(d.value)}</td><td>${esc(d.owner)}</td><td style="color:var(--text-mid);">${esc(d.close)}</td><td><button class="btn btn-ghost btn-sm nx-more" data-type="deal" data-id="${esc(d.name)}">•••</button></td></tr>`).join('')}</tbody></table>` }
@@ -1760,39 +1782,34 @@ function createInvoice(){
   }
 
   async function transferStock(){
-    const inventoryRows = Array.isArray(window.NEXUS_LIVE_INVENTORY)
-      ? window.NEXUS_LIVE_INVENTORY
-      : [];
-
-    if(!inventoryRows.length){
-      toast('No inventory', 'No PostgreSQL inventory records are available.');
+    const allWarehouses = ['Mumbai', 'Delhi', 'Bengaluru'];
+    const pList = Array.isArray(products) && products.length ? products : (window.NEXUS_LIVE_PRODUCTS || []);
+    
+    if(!pList.length){
+      toast('No products', 'No catalog items found to transfer.');
       return;
     }
 
     const productsByName = {};
-
-    inventoryRows.forEach(i => {
-      productsByName[i.name] = i.product_id;
+    pList.forEach(p => {
+      productsByName[p.name] = p.id;
     });
 
-    const warehouses = [...new Set(inventoryRows.map(i => i.loc))];
-
     openModal(
-      'Transfer stock',
-      'Move available inventory between warehouse locations.',
+      'Transfer Stock',
+      'Move stock atomically between warehouses with ACID locking.',
       formShell([
-        select('Product','product',Object.keys(productsByName)),
-        select('From','from',warehouses),
-        select('To','to',warehouses),
-        field('Quantity','qty','1','number','min="1"'),
-        field('Reference','ref','','text','placeholder="Optional transfer reference"')
+        select('Product to Transfer', 'product', Object.keys(productsByName)),
+        `<div class="nx-field"><label>Source Warehouse (From)</label><select name="from">${allWarehouses.map((w,i)=>`<option value="${w}" ${i===0?'selected':''}>${w} Depot</option>`).join('')}</select></div>`,
+        `<div class="nx-field"><label>Destination Warehouse (To)</label><select name="to">${allWarehouses.map((w,i)=>`<option value="${w}" ${i===1?'selected':''}>${w} Depot</option>`).join('')}</select></div>`,
+        field('Transfer Quantity', 'qty', '10', 'number', 'min="1" required'),
+        field('Transfer Reference', 'ref', 'TRF-' + Date.now().toString().slice(-6), 'text', 'placeholder="e.g. TRF-100234"')
       ]),
-      `<button class="btn btn-ghost btn-sm" type="button" data-close-modal>Cancel</button>${primary('Transfer stock')}`
+      `<button class="btn btn-ghost btn-sm" type="button" data-close-modal>Cancel</button>${primary('Execute Stock Transfer')}`
     );
 
     $('#nx-active-form').onsubmit = async e => {
       e.preventDefault();
-
       const d = new FormData(e.target);
       const productName = String(d.get('product') || '');
       const from = String(d.get('from') || '');
@@ -1800,40 +1817,36 @@ function createInvoice(){
       const qty = Number(d.get('qty') || 0);
 
       if(from === to){
-        toast('Transfer blocked','Source and destination must be different.');
+        toast('Transfer blocked', 'Source and destination warehouses must be different.');
         return;
       }
 
       if(!Number.isFinite(qty) || qty <= 0){
-        toast('Invalid quantity','Enter a valid transfer quantity.');
+        toast('Invalid quantity', 'Enter a valid positive transfer quantity.');
         return;
       }
 
       const productId = productsByName[productName];
 
       try{
-        const result = await NexusAPI.transferInventory(
-          productId,
-          from,
-          to,
-          qty
-        );
+        const result = await NexusAPI.transferInventory(productId, from, to, qty);
 
         if(!result.success){
           throw new Error(result.message || 'Stock transfer failed.');
         }
 
         closeModal();
-        toast(
-          'Transfer completed',
-          `${qty} units of ${productName} moved successfully.`
-        );
+        toast('Transfer completed', `${qty} units of ${productName} transferred from ${from} to ${to}.`);
 
-        const refreshed = await NexusAPI.inventory();
-
-        if(refreshed.success && Array.isArray(refreshed.data)){
-          window.NEXUS_LIVE_INVENTORY = refreshed.data.map(i => ({
-            id: i.id,
+        if(typeof window.refreshAllNexusData === 'function') {
+          window.refreshAllNexusData();
+        }
+      }catch(error){
+        console.error('NEXUS stock transfer failed:', error);
+        toast('Stock transfer failed', error.message || 'Unable to complete transfer.');
+      }
+    };
+  }
             product_id: i.product_id,
             name: i.product || '',
             sku: i.sku || '',
@@ -3043,7 +3056,22 @@ function createInvoice(){
     window.goto=function(name){if(name==='notifications'){$('#topbar-title').textContent='Notifications';document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));notificationPage();$('#screen-notifications').classList.add('active');document.querySelectorAll('.nav-item[data-screen]').forEach(n=>n.classList.remove('active'));window.scrollTo(0,0);return}oldGoto(name)};
   }
   /* Expose actions for future modules. */
-  window.NEXUS_UI={createOrder,createInvoice,newDeal,addProduct,adjustStock,transferStock,addCustomer,exportReport,globalSearch,toast};
+  window.NEXUS_UI={
+    createOrder,
+    newOrder: createOrder,
+    createInvoice,
+    newInvoice: createInvoice,
+    newDeal,
+    addProduct,
+    newProduct: addProduct,
+    adjustStock,
+    transferStock,
+    addCustomer,
+    newCustomer: addCustomer,
+    exportReport,
+    globalSearch,
+    toast
+  };
   // Calculator fallback: handles keys at document level without depending on individual button bindings.
   document.addEventListener('click',e=>{
     const btn=e.target.closest('#nx-modal [data-calc]');
