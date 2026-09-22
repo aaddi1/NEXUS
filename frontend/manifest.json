@@ -1,0 +1,41 @@
+{
+  "name": "NEXUS Enterprise Platform",
+  "short_name": "NEXUS",
+  "description": "Enterprise Operations, Invoicing, Warehouse & Business Intelligence Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0D11",
+  "theme_color": "#0D1116",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Create Order",
+      "short_name": "New Order",
+      "description": "Fast commercial order creation",
+      "url": "/#orders",
+      "icons": [{ "src": "favicon.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Generate Invoice",
+      "short_name": "Invoices",
+      "description": "Issue tax invoices with QR signature",
+      "url": "/#invoices",
+      "icons": [{ "src": "favicon.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Inventory & Stock",
+      "short_name": "Inventory",
+      "description": "Multi-warehouse stock control",
+      "url": "/#inventory",
+      "icons": [{ "src": "favicon.svg", "sizes": "192x192" }]
+    }
+  ]
+}

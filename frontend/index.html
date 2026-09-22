@@ -2,9 +2,13 @@
 <html lang="en">
 <head>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="manifest" href="manifest.json">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NEXUS — Business Management</title>
+<meta name="theme-color" content="#0D1116">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>NEXUS — Enterprise Platform</title>
 <script>
   (function(){
     try {
@@ -51,12 +55,12 @@
     <form id="login-form" class="auth-form active">
       <div class="field">
         <label for="li-email">Work email</label>
-        <input id="li-email" type="email" placeholder="you@company.com" value="admin123@nexus.com" required>
+        <input id="li-email" type="email" placeholder="you@company.com" required autocomplete="username">
       </div>
       <div class="field">
         <label for="li-pass">Password</label>
         <div class="nx-password-wrap">
-          <input id="li-pass" type="password" placeholder="••••••••••" value="admin123" required>
+          <input id="li-pass" type="password" placeholder="••••••••••" required autocomplete="current-password">
           <button type="button" class="nx-password-toggle" id="nx-password-toggle" aria-label="Show password" title="Show password">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6Z"/><circle cx="12" cy="12" r="2.7"/>
@@ -446,6 +450,8 @@
 <script src="js/forecast.js"></script>
 <script src="js/help-complaints.js"></script>
 <script src="js/super-admin.js"></script>
+<script src="js/employee-workspace.js"></script>
+<script src="js/pwa.js"></script>
 
 </body>
 </html>

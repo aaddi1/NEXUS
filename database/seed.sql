@@ -216,9 +216,51 @@ INSERT INTO complaints (user_name, user_email, company, type, subject, message, 
 ('Shop Owner Rajesh', 'rajesh@kirana.in', 'Rajesh Supermart', 'Feature Request / Feedback', 'Request for barcode scanner support at POS', 'Would love to have instant barcode scanning on the Create Order screen.', 'normal', 'open'),
 ('Priya Nair', 'priya.nair@example.com', 'Masala & More', 'Account & Access', 'Password reset request for regional executive', 'Need password reset assistance for our south region sales executive.', 'high', 'resolved');
 
--- BUG REPORTS / SYSTEM DIAGNOSTICS
-INSERT INTO bug_reports (user_email, component, error_message, severity, status) VALUES
-('system_monitor@nexus.com', 'PostgreSQL Pool', 'Temporary latency spike during bulk invoice PDF generation', 'normal', 'resolved'),
-('riya.mehta@example.com', 'PDFKit Exporter', 'Currency symbol alignment on landscape invoice format', 'low', 'open'),
-('rahul@nexus.com', 'FastAPI Engine', 'Cache warm-up required on 30-day forecast OLS regression', 'normal', 'resolved');
+-- EMPLOYEE SALARIES
+INSERT INTO employee_salaries (employee_id, amount, payment_date, salary_month, salary_invoice_number, notes)
+SELECT id, 65000, '2026-09-01', 'August 2026', 'SAL-2026-08-01', 'Sales Lead monthly salary + performance bonus'
+FROM users WHERE email = 'riya@nexus.com'
+LIMIT 1;
+
+INSERT INTO employee_salaries (employee_id, amount, payment_date, salary_month, salary_invoice_number, notes)
+SELECT id, 55000, '2026-09-01', 'August 2026', 'SAL-2026-08-02', 'Inventory Manager monthly compensation'
+FROM users WHERE email = 'rahul@nexus.com'
+LIMIT 1;
+
+INSERT INTO employee_salaries (employee_id, amount, payment_date, salary_month, salary_invoice_number, notes)
+SELECT id, 60000, '2026-09-01', 'August 2026', 'SAL-2026-08-03', 'Finance Lead monthly salary'
+FROM users WHERE email = 'arjun@nexus.com'
+LIMIT 1;
+
+INSERT INTO employee_salaries (employee_id, amount, payment_date, salary_month, salary_invoice_number, notes)
+SELECT id, 45000, '2026-09-01', 'August 2026', 'SAL-2026-08-04', 'Sales Executive monthly salary'
+FROM users WHERE email = 'priya@nexus.com'
+LIMIT 1;
+
+-- EMPLOYEE ASSIGNED ITEMS / SAMPLES
+INSERT INTO employee_items (employee_id, product_id, quantity, issued_date, status, notes)
+SELECT u.id, p.id, 5, '2026-09-10', 'issued', 'Client demo samples for export trade show'
+FROM users u, products p
+WHERE u.email = 'riya@nexus.com' AND p.sku = 'NX-MNG-001'
+LIMIT 1;
+
+INSERT INTO employee_items (employee_id, product_id, quantity, issued_date, status, notes)
+SELECT u.id, p.id, 2, '2026-09-12', 'issued', 'Retail counter tasting sample bottles'
+FROM users u, products p
+WHERE u.email = 'priya@nexus.com' AND p.sku = 'NX-CFE-001'
+LIMIT 1;
+
+-- COMPANY EXPENSES
+INSERT INTO expenses (category, amount, description, expense_date) VALUES
+('Warehouse Rent', 45000, 'Monthly lease for Mumbai Central Depot WH-1', '2026-09-01'),
+('Logistics & Freight', 18500, 'Inter-depot cold storage transport Mumbai to Delhi', '2026-09-05'),
+('Packaging Materials', 12000, 'Heavy-duty export corrugated carton procurement', '2026-09-08'),
+('Cloud & Infrastructure', 8500, 'PostgreSQL cluster and AWS server hosting', '2026-09-10');
+
+-- ATTRIBUTE ORDERS TO EMPLOYEES
+UPDATE orders SET employee_id = (SELECT id FROM users WHERE email = 'riya@nexus.com' LIMIT 1) WHERE id % 2 = 0;
+UPDATE orders SET employee_id = (SELECT id FROM users WHERE email = 'priya@nexus.com' LIMIT 1) WHERE id % 2 = 1;
+UPDATE deals SET employee_id = (SELECT id FROM users WHERE email = 'riya@nexus.com' LIMIT 1) WHERE id % 2 = 0;
+UPDATE deals SET employee_id = (SELECT id FROM users WHERE email = 'priya@nexus.com' LIMIT 1) WHERE id % 2 = 1;
+
 

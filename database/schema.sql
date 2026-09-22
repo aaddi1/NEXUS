@@ -142,11 +142,56 @@ CREATE TABLE bug_reports (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE user_logins (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    email VARCHAR(255) NOT NULL,
+    login_method VARCHAR(50) NOT NULL DEFAULT 'password',
+    ip_address VARCHAR(100),
+    user_agent TEXT,
+    status VARCHAR(50) NOT NULL DEFAULT 'success',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE employee_salaries (
+    id SERIAL PRIMARY KEY,
+    employee_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    amount NUMERIC(12,2) NOT NULL,
+    payment_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    salary_month VARCHAR(50) NOT NULL,
+    payment_status VARCHAR(50) DEFAULT 'paid',
+    salary_invoice_number VARCHAR(50) UNIQUE,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE employee_items (
+    id SERIAL PRIMARY KEY,
+    employee_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    issued_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    returned_date DATE,
+    status VARCHAR(50) DEFAULT 'issued', -- issued, returned, damaged
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE expenses (
+    id SERIAL PRIMARY KEY,
+    category VARCHAR(100) NOT NULL,
+    amount NUMERIC(12,2) NOT NULL,
+    description TEXT,
+    expense_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- PERFORMANCE INDEXES
 CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email);
 CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);
 CREATE INDEX IF NOT EXISTS idx_inventory_product ON inventory(product_id);
 CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
+CREATE INDEX IF NOT EXISTS idx_orders_employee ON orders(employee_id);
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_order_items_product ON order_items(product_id);
 CREATE INDEX IF NOT EXISTS idx_invoices_customer ON invoices(customer_id);
@@ -154,4 +199,9 @@ CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice ON invoice_items(invoice_id
 CREATE INDEX IF NOT EXISTS idx_deals_customer ON deals(customer_id);
 CREATE INDEX IF NOT EXISTS idx_complaints_status ON complaints(status);
 CREATE INDEX IF NOT EXISTS idx_bug_reports_status ON bug_reports(status);
+CREATE INDEX IF NOT EXISTS idx_user_logins_user ON user_logins(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_logins_email ON user_logins(email);
+CREATE INDEX IF NOT EXISTS idx_user_logins_created ON user_logins(created_at);
+CREATE INDEX IF NOT EXISTS idx_employee_salaries_emp ON employee_salaries(employee_id);
+CREATE INDEX IF NOT EXISTS idx_employee_items_emp ON employee_items(employee_id);
 

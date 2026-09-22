@@ -228,4 +228,39 @@ router.patch('/bugs/:id/status', async (req, res) => {
   }
 });
 
+// GET USER LOGIN ACTIVITY & AUDIT LOGS
+router.get('/logins', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        l.id,
+        l.user_id,
+        l.email,
+        l.login_method,
+        l.ip_address,
+        l.user_agent,
+        l.status,
+        l.created_at,
+        u.name AS user_name,
+        u.role AS user_role,
+        u.workspace_type
+      FROM user_logins l
+      LEFT JOIN users u ON u.id = l.user_id
+      ORDER BY l.id DESC
+      LIMIT 50
+    `);
+
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (error) {
+    console.error('Fetch logins audit log error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch login audit logs'
+    });
+  }
+});
+
 module.exports = router;

@@ -10,6 +10,8 @@ const notificationsRoutes = require('./routes/notifications');
 const dashboardRoutes = require('./routes/dashboard');
 const complaintsRoutes = require('./routes/complaints');
 const adminRoutes = require('./routes/admin');
+const employeesRoutes = require('./routes/employees');
+const financialsRoutes = require('./routes/financials');
 const authRoutes = require('./routes/auth');
 const { authenticateToken } = require('./middleware');
 const express = require('express');
@@ -33,6 +35,8 @@ app.use('/api/notifications', authenticateToken, notificationsRoutes);
 app.use('/api/dashboard', authenticateToken, dashboardRoutes);
 app.use('/api/complaints', authenticateToken, complaintsRoutes);
 app.use('/api/admin', authenticateToken, adminRoutes);
+app.use('/api/employees', authenticateToken, employeesRoutes);
+app.use('/api/financials', authenticateToken, financialsRoutes);
 app.use(
   '/api/invoices',
   (req, res, next) => {

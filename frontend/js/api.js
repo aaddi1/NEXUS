@@ -251,6 +251,46 @@ var NexusAPI = {
       method: 'PATCH',
       body: JSON.stringify({ status })
     });
+  },
+
+  employees() {
+    return nexusRequest('/employees');
+  },
+
+  employeeWorkspace() {
+    return nexusRequest('/employees/me/workspace');
+  },
+
+  paySalary(payload) {
+    return nexusRequest('/employees/salary/pay', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  issueEmployeeItem(payload) {
+    return nexusRequest('/employees/items/issue', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  returnEmployeeItem(id, payload = {}) {
+    return nexusRequest(`/employees/items/${id}/return`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  financialsOverview() {
+    return nexusRequest('/financials/overview');
+  },
+
+  recordExpense(payload) {
+    return nexusRequest('/financials/expenses', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
   }
 };
 
