@@ -52,15 +52,15 @@
     </div>
 
     <!-- 1. SIGN IN FORM -->
-    <form id="login-form" class="auth-form active">
+    <form id="login-form" class="auth-form active" autocomplete="off">
       <div class="field">
         <label for="li-email">Work email</label>
-        <input id="li-email" type="email" placeholder="you@company.com" required autocomplete="username">
+        <input id="li-email" type="email" placeholder="you@company.com" required autocomplete="off" value="">
       </div>
       <div class="field">
         <label for="li-pass">Password</label>
         <div class="nx-password-wrap">
-          <input id="li-pass" type="password" placeholder="••••••••••" required autocomplete="current-password">
+          <input id="li-pass" type="password" placeholder="••••••••••" required autocomplete="new-password" value="">
           <button type="button" class="nx-password-toggle" id="nx-password-toggle" aria-label="Show password" title="Show password">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6Z"/><circle cx="12" cy="12" r="2.7"/>

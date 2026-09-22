@@ -215,12 +215,69 @@
       });
     }
 
-    // 4. Social Single Sign-On (Google, GitHub, Microsoft)
-    const ssoGoogle = document.getElementById('sso-google');
-    const ssoGithub = document.getElementById('sso-github');
-    const ssoMicrosoft = document.getElementById('sso-microsoft');
+    // 4. Social Single Sign-On (Google, GitHub, Microsoft) with Interactive Provider OAuth Modal
+    function openSsoModal(provider, defaultName, defaultEmail) {
+      if (typeof openModal !== 'function') {
+        handleDirectSso(provider, defaultName, defaultEmail, 'superadmin');
+        return;
+      }
 
-    async function handleSsoLogin(provider, defaultName, defaultEmail, defaultRole) {
+      const providerTitle = provider.charAt(0).toUpperCase() + provider.slice(1);
+      const isGoogle = provider === 'google';
+      const isGithub = provider === 'github';
+
+      const ssoModalHtml = `
+        <form id="nx-active-sso-form" style="display:flex;flex-direction:column;gap:14px;">
+          <div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid var(--glass-border);">
+            <div style="font-size:24px;">${isGoogle ? '🔴' : isGithub ? '🐱' : '🟦'}</div>
+            <div>
+              <div style="font-weight:700;color:var(--text-hi);font-size:14px;">${providerTitle} OAuth Identity Link</div>
+              <div style="font-size:12px;color:var(--text-mid);">Authorize NEXUS with your verified ${providerTitle} account.</div>
+            </div>
+          </div>
+
+          <div class="nx-form-grid" style="gap:10px;">
+            <div class="nx-field"><label>Account Name *</label><input type="text" id="sso-name" value="${defaultName}" required style="height:36px;font-size:13px;"></div>
+            <div class="nx-field"><label>${providerTitle} Verified Email *</label><input type="email" id="sso-email" value="${defaultEmail}" required style="height:36px;font-size:13px;"></div>
+          </div>
+
+          <div class="nx-field" style="margin:0;">
+            <label>Select Workspace / Role</label>
+            <select id="sso-role" style="height:36px;font-size:13px;">
+              <option value="superadmin" ${defaultEmail.includes('aryan') ? 'selected' : ''}>Super Admin / System Owner (Aryan Sharma)</option>
+              <option value="Owner" ${!defaultEmail.includes('aryan') ? 'selected' : ''}>Enterprise Company Owner</option>
+              <option value="Shop Owner">Retail Shop Owner</option>
+              <option value="Sales Lead">Sales Lead</option>
+              <option value="Client">Client Account</option>
+            </select>
+          </div>
+        </form>
+      `;
+
+      openModal(
+        `Sign in with ${providerTitle}`,
+        `Connect your ${providerTitle} account to PostgreSQL.`,
+        ssoModalHtml,
+        `<button class="btn btn-ghost btn-sm" type="button" data-close-modal>Cancel</button><button class="btn btn-primary btn-sm" type="submit" form="nx-active-sso-form">Authorize & Enter Portal</button>`,
+        true
+      );
+
+      const f = document.getElementById('nx-active-sso-form');
+      if (f) {
+        f.onsubmit = async (e) => {
+          e.preventDefault();
+          const name = (document.getElementById('sso-name')?.value || '').trim();
+          const email = (document.getElementById('sso-email')?.value || '').trim();
+          const role = document.getElementById('sso-role')?.value || 'Owner';
+          if (!name || !email) return;
+
+          if (typeof closeModal === 'function') closeModal();
+          await handleDirectSso(provider, name, email, role);
+        };
+      }
+    }
+
+    async function handleDirectSso(provider, name, email, role) {
       try {
         if (typeof toast === 'function') toast('SSO Authenticating', `Connecting via ${provider}...`);
 
@@ -229,9 +286,10 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             provider,
-            name: defaultName,
-            email: defaultEmail,
-            role: defaultRole
+            name,
+            email,
+            role,
+            workspace_type: role === 'superadmin' ? 'system' : role === 'Shop Owner' ? 'shop_owner' : 'enterprise'
           })
         });
         const data = await res.json().catch(() => ({}));
@@ -247,9 +305,18 @@
       }
     }
 
-    if (ssoGoogle) ssoGoogle.onclick = () => handleSsoLogin('Google', 'Aryan Sharma', 'aryan.sharma@gmail.com', 'superadmin');
-    if (ssoGithub) ssoGithub.onclick = () => handleSsoLogin('GitHub', 'aaddi1', 'aaddi1@github.com', 'superadmin');
-    if (ssoMicrosoft) ssoMicrosoft.onclick = () => handleSsoLogin('Microsoft', 'Enterprise Manager', 'owner@enterprise.in', 'Owner');
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('#sso-google')) {
+        e.preventDefault();
+        openSsoModal('google', 'Aryan Sharma', 'aryan.sharma@gmail.com');
+      } else if (e.target.closest('#sso-github')) {
+        e.preventDefault();
+        openSsoModal('github', 'aaddi1', 'aaddi1@github.com');
+      } else if (e.target.closest('#sso-microsoft')) {
+        e.preventDefault();
+        openSsoModal('microsoft', 'Enterprise Owner', 'owner@enterprise.in');
+      }
+    });
   }
 
   window.NexusAuth = {

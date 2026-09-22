@@ -52,8 +52,6 @@
   }
 
   function renderSuperAdminScreen() {
-    if (!isSuperAdminUser()) return;
-
     let screen = document.getElementById('screen-superadmin');
     if (!screen) {
       screen = document.createElement('div');
