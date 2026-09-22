@@ -17,7 +17,7 @@
   <a href="https://threejs.org/"><img src="https://img.shields.io/badge/Three.js-r128-black?style=flat-square&logo=three.js&logoColor=white" alt="Three.js" /></a>
 </p>
 
-**NEXUS** is a high-performance, modular enterprise resource planning (ERP), CRM, and business intelligence platform designed for end-to-end commercial operations. It unifies order orchestration, multi-warehouse stock management, cryptographic invoice issuance, sales pipeline tracking, and predictive demand analytics within a unified operational workspace.
+**NEXUS** is an enterprise-grade commercial operating system, ERP, CRM, and predictive intelligence platform designed for end-to-end multi-warehouse commercial operations. It unifies order orchestration, multi-location stock management, cryptographic invoice issuance, sales opportunity tracking, and predictive demand analytics within a zero-latency operational workspace.
 
 Repository: [https://github.com/aaddi1/NEXUS](https://github.com/aaddi1/NEXUS)
 
@@ -31,14 +31,15 @@ NEXUS utilizes a decoupled micro-architecture where transaction-heavy operations
 flowchart TD
     subgraph Client ["Client Interface (Port :8001)"]
         UI["NEXUS Web Application (Vanilla JS / CSS Grid / Three.js)"]
-        State["Client State & Live Hydration Engine"]
+        SuperAdminUI["Aryan Sharma Super Admin Command Center"]
+        HelpBeacon["Universal Help & Complaints Beacon"]
     end
 
     subgraph BackendGateway ["REST Gateway & Business Logic (Port :5000)"]
         Express["Express.js Core"]
-        AuthMid["JWT Authentication Middleware"]
+        AuthMid["JWT Authentication & SSO Middleware"]
         PDFGen["PDFKit + QR Engine (HMAC-SHA256)"]
-        Routes["Routes: Customers | Products | Inventory | Orders | Invoices | Deals"]
+        Routes["Routes: Admin | Complaints | Orders | Invoices | Inventory | Products | Customers | Deals | Team"]
     end
 
     subgraph AnalyticsEngine ["Intelligence & Forecasting Engine (Port :8000)"]
@@ -52,6 +53,8 @@ flowchart TD
     end
 
     UI -->|"Bearer Auth / REST API"| BackendGateway
+    SuperAdminUI -->|"Admin & Management API"| BackendGateway
+    HelpBeacon -->|"Complaints API"| BackendGateway
     UI -->|"Analytics API"| AnalyticsEngine
     BackendGateway -->|"pg Connection Pool (ACID / Row Locks)"| Postgres
     AnalyticsEngine -->|"psycopg2 Read Queries"| Postgres
@@ -59,33 +62,74 @@ flowchart TD
 
 ---
 
-## Core Subsystems
+## Default Seeded Credentials
 
-### 1. High-Concurrency REST API Gateway (`Node.js / Express`)
-- **Connection Pooling**: Backed by `pg.Pool` with parameterized query sanitization.
-- **Concurrency & Locking**: Multi-warehouse stock transfers execute inside atomic PostgreSQL transactions utilizing `SELECT ... FOR UPDATE` row-level mutexes.
-- **Authentication**: Stateless JSON Web Token (`jsonwebtoken`) bearer authentication with `bcrypt` (10 rounds) password hashing.
+NEXUS includes seeded accounts configured across different workspace roles:
 
-### 2. Cryptographic Invoicing & Verification Engine
-- **Vector PDF Generation**: High-precision vector rendering using `PDFKit` and SVG conversion via `svg-to-pdfkit`.
-- **Public Authenticity Signatures**: Invoices generate a deterministic HMAC-SHA256 signature calculated against the document sequence and runtime secret.
-- **Embedded Dynamic QR Verification**: Each invoice contains an embedded High-ECC QR code leading to a tamper-evident public endpoint (`/api/invoices/public/:invoiceNumber/:signature.pdf`) with constant-time (`crypto.timingSafeEqual`) authentication.
+| Role | Name | Email | Default Password | Workspace Type |
+|---|---|---|---|---|
+| **Super Admin & Owner** | Aryan Sharma | `aryan@nexus.com` | `admin123` | System Command (`system`) |
+| **Super Admin (Alias)** | Aryan Sharma | `admin123@nexus.com` | `admin123` | Enterprise Command (`enterprise`) |
+| **Enterprise Owner** | Reliance Enterprise | `reliance@nexus.com` | `admin123` | Enterprise ERP (`enterprise`) |
+| **Retail Shop Owner** | Retail Store Manager | `shopowner@nexus.com` | `admin123` | Retail Shop POS (`shop_owner`) |
+| **Sales Lead** | Riya Mehta | `riya@nexus.com` | `admin123` | Enterprise (`enterprise`) |
+| **Inventory Manager** | Rahul Kapoor | `rahul@nexus.com` | `admin123` | Enterprise (`enterprise`) |
+| **Finance Lead** | Arjun Verma | `arjun@nexus.com` | `admin123` | Enterprise (`enterprise`) |
 
-### 3. Business Intelligence & Predictive Analytics (`Python / FastAPI`)
-- **Linear Trend Extrapolation**: Computes ordinary least-squares (OLS) slope analysis over historical order volumes to model 30-day forward cash flow and revenue trajectory.
-- **Stock Depletion & Run-Out Matrix**: Aggregates decoupled sales velocity and inventory tables into days-remaining metrics and categorizes stock risk (`critical`, `high`, `medium`, `low`).
-- **Dynamic Reorder Recommender**: Computes stock replenish recommendations incorporating lead-time burn rate and a 20% safety buffer.
+---
 
-### 4. Interactive Zero-Dependency Client Layer
-- **High-Performance DOM Engine**: Built without heavy framework overhead to maximize responsiveness and paint cycles.
-- **3D Visualization**: Native WebGL viewport integration powered by `Three.js` (r128).
-- **Client-Side Export Pipeline**: Integrated `SheetJS` (XLSX) streaming export and native printable document synthesizer.
+## Core Portals & Workspaces
+
+### 1. 🛡️ Aryan Sharma Super Admin Control Center (`#screen-superadmin`)
+- **System Command HUD**: Real-time monitoring of active PostgreSQL ACID pool connections, FastAPI engine status, CPU allocation, RAM utilization, and total platform transaction volumes.
+- **Support & Complaints Dispatch Inbox**: Live inbox receiving all incoming tickets from clients, enterprise company owners, and retail shop owners with priority tags (`Critical`, `High`, `Normal`) and direct **Reply & Resolve** administrative logging.
+- **Account Control & Direct Password Resets (`/api/admin/users/reset-password`)**: Platform-wide user registry displaying last-accessed timestamps, order histories, and a direct action to reset/assign credentials for any account.
+- **System Diagnostics & Bug Tracker (`/api/admin/bugs`)**: Real-time error log capturing server exceptions, latency spikes, and runtime component diagnostic events.
+- **Account Provisioning**: Instant modal to provision new Enterprise Company or Retail Shop Owner accounts in PostgreSQL.
+
+---
+
+### 2. 🏢 Enterprise Company & Retail Shop Owner Workspace
+- **Executive Dashboard (`#screen-dashboard`)**: Live KPI cards (Revenue, Orders, Customers, Inventory Valuation), monthly revenue trend curves, top-selling SKU rankings, and chronological operational feeds.
+- **Customer CRM (`#screen-customers`)**: Account registry tracking customer lifetime value (LTV), total orders placed, segment classifications (`VIP`, `Standard`, `New`), and automated professional portrait generation.
+- **Catalog Management (`#screen-products`)**: SKU registry with automatic commercial packshot photo matching, category filters, and live multi-warehouse stock sync.
+- **Multi-Location Inventory (`#screen-inventory`)**: Warehouse management across **Mumbai WH-1**, **Delhi WH-2**, and **Bengaluru WH-3** with atomic stock adjustments and transfer workflows protected by PostgreSQL `FOR UPDATE` locks.
+- **Enterprise Order Creation Suite (`#screen-orders`)**:
+  - **Inline Customer Registration**: Register and auto-select new customers directly inside the order creation flow.
+  - **Multi-Item Line Ledger**: Select products with live pricing, step counter quantity adjusters, and line subtotal calculations.
+  - **Dual-Mode Discount Selector**: Specify discounts either as a flat rupee reduction (`₹ Flat`) or as a percentage (`% Percent`).
+  - **GST & Tax Computation**: Select GST rates (`0%`, `5%`, `12%`, `18% Standard`, `28% GST`) with live automated tax calculations.
+  - **Payment & Dispatch**: Select payment method (UPI, Net Banking, Card, NEFT, Cash) and dispatch warehouse depot.
+  - **Instant Invoice Generation**: Auto-generate sequential tax invoices with cryptographic HMAC-SHA256 QR signatures upon order completion.
+- **Invoice Billing & Cryptographic QR Verification (`#screen-invoices`)**:
+  - Issue vector PDF invoices with high-ECC dynamic QR codes.
+  - Public tamper-evident verification endpoint guarded by `crypto.timingSafeEqual`.
+  - In-browser printable PDF viewer.
+- **Sales Pipeline / Deals CRM (`#screen-sales`)**: Track deal stages (`Discovery 25%`, `Proposal 50%`, `Negotiation 75%`, `Closed won 100%`), contract values, and weighted revenue pipelines.
+- **AI Business Intelligence & Demand Intelligence (`#screen-analytics`)**:
+  - Revenue by Category bar charts and Sales Channel donut graphs (Online, Direct, Wholesale).
+  - 14-day revenue velocity charts and 30-day OLS machine learning cash flow projections.
+  - Product demand run-out matrix categorizing stock risk (`Critical`, `High`, `Medium`, `Low`).
+
+---
+
+### 3. 🆘 Universal "Help & Raise a Complaint" System
+- **Floating Help Beacon (`#nx-floating-help-btn`)**: Fixed universal support beacon available across all screens for both clients and store owners.
+- **Structured Dispatch Modal (`/api/complaints`)**:
+  - Form fields: Full Name, Email, Company Name, Category, Severity (`Critical`, `High`, `Medium`, `Low`), Subject, and Message.
+  - Direct PostgreSQL logging with immediate dispatch to Aryan Sharma's Super Admin Inbox.
+
+---
+
+### 4. 🧮 Utility & Compliance Subsystems
+- **Dual-Pane Calculator & Currency Converter**: Arithmetic keypad with transaction history alongside a live real-time currency converter across **INR (₹)**, **USD ($)**, **EUR (€)**, **GBP (£)**, **AED**, and **JPY**.
+- **Legal & Compliance Suite (`frontend/js/legal.js`)**: Modals for **Terms of Service**, **Privacy Policy**, **Community Guidelines**, and **Proprietary License**.
+- **Zero-Flicker Session Persistence**: CSS-level pre-paint session validation (`.nexus-authenticated`) ensuring page refreshes never log out.
+- **Social Single Sign-On (SSO)**: One-click sign-in via Google, GitHub, and Microsoft OAuth integrations.
 
 ---
 
 ## Database Schema & Relations
-
-The PostgreSQL schema enforces strict relational integrity with cascade rules, custom sequences, and index constraints.
 
 ```mermaid
 erDiagram
@@ -95,6 +139,8 @@ erDiagram
         varchar email UK
         text password_hash
         varchar role
+        varchar workspace_type
+        timestamp last_accessed
         timestamp created_at
     }
 
@@ -137,7 +183,14 @@ erDiagram
         integer customer_id FK
         varchar status
         varchar payment_status
+        varchar payment_method
+        varchar warehouse
+        numeric subtotal
+        numeric discount
+        numeric tax_rate
+        numeric tax_amount
         numeric total
+        text notes
         timestamp created_at
     }
 
@@ -172,13 +225,31 @@ erDiagram
         numeric unit_price
     }
 
-    PAYMENTS {
+    COMPLAINTS {
         serial id PK
-        integer invoice_id FK
-        numeric amount
-        varchar payment_method
-        varchar payment_status
-        timestamp paid_at
+        integer user_id FK
+        varchar user_name
+        varchar user_email
+        varchar company
+        varchar type
+        varchar subject
+        text message
+        varchar priority
+        varchar status
+        text admin_reply
+        timestamp created_at
+        timestamp resolved_at
+    }
+
+    BUG_REPORTS {
+        serial id PK
+        varchar user_email
+        varchar component
+        text error_message
+        text stack_trace
+        varchar status
+        varchar severity
+        timestamp created_at
     }
 
     DEALS {
@@ -194,66 +265,80 @@ erDiagram
     CUSTOMERS ||--o{ ORDERS : places
     CUSTOMERS ||--o{ INVOICES : billed_to
     CUSTOMERS ||--o{ DEALS : associates
-    CATEGORIES ||--o{ PRODUCTS : categorizes
     PRODUCTS ||--o{ INVENTORY : stocked_in
     PRODUCTS ||--o{ ORDER_ITEMS : contains
     PRODUCTS ||--o{ INVOICE_ITEMS : references
     ORDERS ||--|{ ORDER_ITEMS : includes
     INVOICES ||--|{ INVOICE_ITEMS : includes
-    INVOICES ||--o{ PAYMENTS : settles
+    USERS ||--o{ COMPLAINTS : submits
 ```
 
 ---
 
-## API Reference
+## API Reference Matrix
 
-### Authentication
+### Authentication & Single Sign-On
 | Method | Endpoint | Description | Auth Required |
 |---|---|---|---|
 | `POST` | `/api/auth/login` | Authenticate user credentials and issue JWT | No |
+| `POST` | `/api/auth/register` | Register new enterprise/shop workspace user | No |
+| `POST` | `/api/auth/sso` | Social SSO (Google, GitHub, Microsoft) | No |
+| `GET` | `/api/auth/me` | Fetch authenticated user profile details | Bearer JWT |
 
-### Customers & CRM
+### Super Admin Command Center (`Aryan Sharma`)
 | Method | Endpoint | Description | Auth Required |
 |---|---|---|---|
-| `GET` | `/api/customers` | List all active customers with aggregated LTV | Bearer JWT |
-| `GET` | `/api/customers/:id` | Fetch customer profile by ID | Bearer JWT |
-| `POST` | `/api/customers` | Register a new customer record | Bearer JWT |
-| `PUT` | `/api/customers/:id` | Update customer metadata | Bearer JWT |
-| `DELETE` | `/api/customers/:id` | Soft-delete / archive customer | Bearer JWT |
+| `GET` | `/api/admin/stats` | Platform-wide KPIs & system health diagnostics | Bearer JWT |
+| `GET` | `/api/admin/users` | List all platform accounts & last-accessed times | Bearer JWT |
+| `POST` | `/api/admin/users/reset-password` | Directly reset/set password for any account | Bearer JWT |
+| `GET` | `/api/admin/bugs` | List all system errors and runtime bug logs | Bearer JWT |
+| `PATCH` | `/api/admin/bugs/:id/status` | Mark system bug as resolved | Bearer JWT |
 
-### Products & Multi-Warehouse Inventory
+### Help Desk & Complaints
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| `POST` | `/api/complaints` | Submit support ticket / complaint | Bearer JWT |
+| `GET` | `/api/complaints` | List all tickets for Super Admin inbox | Bearer JWT |
+| `PATCH` | `/api/complaints/:id/resolve` | Send admin resolution & resolve ticket | Bearer JWT |
+| `DELETE` | `/api/complaints/:id` | Purge ticket record | Bearer JWT |
+
+### Orders & Invoicing
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| `GET` | `/api/orders` | List order book with payment & fulfillment states | Bearer JWT |
+| `POST` | `/api/orders` | Create order with dual discounts, GST, & auto-invoice | Bearer JWT |
+| `PATCH` | `/api/orders/:id/status` | Mutate fulfillment & payment status | Bearer JWT |
+| `GET` | `/api/invoices` | List invoices with tax & discount breakdowns | Bearer JWT |
+| `POST` | `/api/invoices` | Generate invoice & line items in PostgreSQL | Bearer JWT |
+| `PATCH` | `/api/invoices/:id/status` | Update invoice status (`due`, `paid`, `draft`) | Bearer JWT |
+| `GET` | `/api/invoices/:id/pdf` | Vector PDF stream with embedded QR code | Bearer JWT |
+| `GET` | `/api/invoices/public/:num/:sig.pdf` | Public cryptographic invoice PDF endpoint | No (HMAC guarded) |
+
+### Products, Categories & Inventory
 | Method | Endpoint | Description | Auth Required |
 |---|---|---|---|
 | `GET` | `/api/products` | Retrieve catalog with category associations | Bearer JWT |
 | `POST` | `/api/products` | Insert new SKU into catalog | Bearer JWT |
 | `PUT` | `/api/products/:id` | Update product SKU and pricing | Bearer JWT |
-| `DELETE` | `/api/products/:id` | Delete product (with constraint protection) | Bearer JWT |
-| `GET` | `/api/inventory` | List warehouse stock allocations | Bearer JWT |
+| `DELETE` | `/api/products/:id` | Delete product SKU | Bearer JWT |
+| `GET` | `/api/categories` | List categories with product count joins | Bearer JWT |
+| `GET` | `/api/inventory` | List multi-warehouse inventory allocations | Bearer JWT |
 | `PATCH` | `/api/inventory/:id` | Adjust absolute stock count | Bearer JWT |
 | `POST` | `/api/inventory/transfer` | Atomic multi-warehouse stock transfer | Bearer JWT |
 
-### Orders & Invoicing
+### Customers, Deals, Team & Analytics
 | Method | Endpoint | Description | Auth Required |
 |---|---|---|---|
-| `GET` | `/api/orders` | List order ledger with payment & fulfillment state | Bearer JWT |
-| `POST` | `/api/orders` | Create transaction order and line items | Bearer JWT |
-| `PATCH` | `/api/orders/:id/status` | Mutate order and payment status | Bearer JWT |
-| `GET` | `/api/invoices` | List invoices with discount & tax calculations | Bearer JWT |
-| `POST` | `/api/invoices` | Generate invoice and line-item records | Bearer JWT |
-| `PATCH` | `/api/invoices/:id/status` | Update invoice status (`draft`, `due`, `paid`, etc.) | Bearer JWT |
-| `GET` | `/api/invoices/:id/pdf` | Generate vector invoice PDF on-the-fly | Bearer JWT |
-| `GET` | `/api/invoices/public/:num/:sig.pdf` | Public cryptographic invoice PDF endpoint | No (HMAC guarded) |
-
-### Sales Pipeline (Deals)
-| Method | Endpoint | Description | Auth Required |
-|---|---|---|---|
-| `GET` | `/api/deals` | Fetch active pipeline opportunities | Bearer JWT |
+| `GET` | `/api/customers` | List customers with aggregated LTV | Bearer JWT |
+| `POST` | `/api/customers` | Register customer record | Bearer JWT |
+| `GET` | `/api/deals` | Fetch active sales pipeline opportunities | Bearer JWT |
 | `POST` | `/api/deals` | Create opportunity with stage & probability | Bearer JWT |
-| `PUT` | `/api/deals/:id` | Update deal terms | Bearer JWT |
-| `PATCH` | `/api/deals/:id/stage` | Transition sales stage | Bearer JWT |
-| `DELETE` | `/api/deals/:id` | Purge deal from pipeline | Bearer JWT |
+| `GET` | `/api/team` | List workspace team members | Bearer JWT |
+| `POST` | `/api/team` | Invite / add workspace team member | Bearer JWT |
+| `GET` | `/api/notifications` | Dynamic business notification feed | Bearer JWT |
+| `GET` | `/api/dashboard/stats` | Aggregated dashboard stats & activity feed | Bearer JWT |
 
-### Analytics & Intelligence Microservice (`Port :8000`)
+### FastAPI Analytics Engine (`Port :8000`)
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/health` | Verify analytics engine & database connectivity |
@@ -268,61 +353,79 @@ erDiagram
 
 ```text
 NEXUS/
-├── analytics/                  # Python Intelligence Engine
-│   ├── .venv/                  # Dedicated Python virtual environment
-│   ├── main.py                 # FastAPI application & mathematical models
+├── analytics/                  # Python Intelligence & Machine Learning Engine
+│   ├── .venv/                  # Python virtual environment
+│   ├── main.py                 # FastAPI application & OLS mathematical models
 │   └── .env                    # Analytics database configuration
 ├── backend/                    # Node.js REST API Gateway
 │   ├── assets/fonts/           # Typography assets for vector PDF generation
 │   ├── src/
 │   │   ├── db/                 # PostgreSQL pool initialization
 │   │   ├── routes/             # Express route controllers
-│   │   │   ├── auth.js         # JWT auth & bcrypt verification
+│   │   │   ├── admin.js        # Super Admin command, password resets & bug tracker
+│   │   │   ├── auth.js         # JWT auth, registration & SSO handlers
+│   │   │   ├── categories.js   # Product category controllers
+│   │   │   ├── complaints.js   # Help desk & complaint dispatch system
 │   │   │   ├── customers.js    # CRM operations & LTV tracking
+│   │   │   ├── dashboard.js    # High-speed unified dashboard metrics
 │   │   │   ├── deals.js        # Sales pipeline management
 │   │   │   ├── inventory.js    # Multi-location inventory & atomic transfer
-│   │   │   ├── invoices.js     # PDF generation & HMAC verification
+│   │   │   ├── invoices.js     # PDFKit generation & HMAC-SHA256 verification
+│   │   │   ├── notifications.js# Dynamic business event aggregator
 │   │   │   ├── orders.js       # Transactional order orchestration
-│   │   │   └── products.js     # SKU catalog management
+│   │   │   ├── products.js     # SKU catalog management
+│   │   │   └── team.js         # Team & user management
 │   │   ├── middleware.js       # Bearer token validation
 │   │   └── server.js           # Server bootstrap & CORS configuration
 │   ├── package.json            # Node.js dependencies
 │   └── .env                    # Node.js runtime configuration
+├── cpp/                        # Native C++ Optimization Engine
+│   ├── include/                # Header declarations
+│   ├── src/                    # High-speed OLS and stock risk algorithms
+│   └── CMakeLists.txt          # CMake build configuration
 ├── database/                   # PostgreSQL DDL and DML scripts
 │   ├── schema.sql              # Table definitions, constraints, and sequences
 │   └── seed.sql                # Initial seed data and test accounts
-├── docs/                       # Architectural and technical documentation
+├── docs/                       # Architectural diagrams and brand assets
+│   └── assets/toad-seal.svg    # Official vector brand seal
 ├── frontend/                   # Client-side web application
+│   ├── css/
+│   │   └── style.css           # Design system, themes & animations
 │   ├── favicon.svg             # Vector brand mark
-│   ├── index.html              # Main application markup, views & styles
+│   ├── index.html              # Clean semantic HTML markup
 │   └── js/                     # Modular client-side controllers
-│       ├── api.js              # Centralized API bridge
-│       ├── auth.js             # Session state & JWT handling
-│       ├── live-data.js        # Global workspace hydration
-│       ├── live-deals.js       # Pipeline view sync
-│       ├── live-inventory.js   # Warehouse view sync
-│       ├── live-invoices.js    # Invoice ledger & PDF viewer
-│       ├── live-orders.js      # Order tracking controller
-│       └── live-products.js    # Catalog & live stock controller
+│       ├── api.js              # Centralized REST API client
+│       ├── app.js              # Core UI orchestration & modal handlers
+│       ├── auth.js             # Session persistence & SSO controller
+│       ├── converter-guard.js  # Keyboard navigation protection
+│       ├── deals-backend.js    # Pipeline sync listeners
+│       ├── demand-intelligence.js # Run-out risk categorization
+│       ├── failsafe.js         # Action delegation & navigation router
+│       ├── forecast.js         # AI revenue trend visualizer
+│       ├── help-complaints.js  # Universal floating help beacon
+│       ├── invoices-backend.js # Invoice ledger sync
+│       ├── legal.js            # Terms, Privacy & Compliance viewer
+│       ├── live-analytics.js   # Category & channel chart engine
+│       ├── live-dashboard.js   # Real-time KPI feed
+│       ├── live-data.js        # Global workspace hydration engine
+│       ├── live-deals.js       # Deals view sync
+│       ├── live-inventory.js   # Warehouse stock sync
+│       ├── live-invoices.js    # Invoices view sync
+│       ├── live-orders.js      # Orders view sync
+│       ├── live-products.js    # Catalog view sync
+│       ├── orders-backend.js   # Order ledger listeners
+│       ├── password-toggle.js  # Secure password visibility toggler
+│       ├── super-admin.js      # Aryan Sharma Admin Command Center
+│       └── three-bg.js         # Three.js WebGL ambient background
 ├── package.json                # Root orchestration package configuration
-└── README.md                   # System documentation
+└── README.md                   # Complete system documentation
 ```
 
 ---
 
-## Getting Started
-
-### Prerequisites
-- **Node.js**: `v18.0.0` or higher
-- **PostgreSQL**: `v14.0` or higher
-- **Python**: `v3.11` or higher
-- **Package Manager**: `npm` / `pip`
-
----
+## Quickstart & Local Setup
 
 ### 1. Database Initialization
-
-Create a PostgreSQL database and execute the schema and seed scripts:
 
 ```bash
 # Create PostgreSQL database
@@ -337,38 +440,18 @@ psql -d nexus -f database/seed.sql
 
 ---
 
-### 2. Backend Gateway Configuration & Startup
-
-Configure the environment variables in `backend/.env`:
-
-```env
-PORT=5000
-DATABASE_URL=postgresql://localhost:5432/nexus
-JWT_SECRET=your-production-secret-key
-PUBLIC_BASE_URL=http://localhost:5000
-```
-
-Install dependencies and start the backend:
+### 2. Backend Gateway Startup
 
 ```bash
 cd backend
 npm install
 node src/server.js
 ```
-
 The REST API will be available at `http://localhost:5000`.
 
 ---
 
 ### 3. Analytics Engine Startup
-
-Configure the environment variables in `analytics/.env`:
-
-```env
-DATABASE_URL=postgresql://localhost:5432/nexus
-```
-
-Activate the Python virtual environment and run Uvicorn:
 
 ```bash
 cd analytics
@@ -376,40 +459,17 @@ source .venv/bin/activate
 pip install fastapi uvicorn psycopg2-binary python-dotenv numpy
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
-
 The Intelligence API will be available at `http://localhost:8000`.
 
 ---
 
-### 4. Client Application
-
-Host the frontend using any static file server:
+### 4. Client Web Application
 
 ```bash
 cd frontend
 python3 -m http.server 8001
 ```
-
 Access the application in your browser at `http://localhost:8001`.
-
-#### Default Seeded Credentials:
-- **Super Admin (Aryan Sharma)**: `aryan@nexus.com` / `admin123` (or `admin123@nexus.com` / `admin123`)
-- **Enterprise Company Owner**: `reliance@nexus.com` / `admin123`
-- **Retail Shop Owner**: `shopowner@nexus.com` / `admin123`
-
----
-
-## Portals & Role Breakdown
-
-### 1. Aryan Sharma Super Admin Control Center (`#screen-superadmin`)
-- **Direct Password Resets**: Provision new accounts and directly reset/overwrite forgotten credentials for any client, company owner, or employee.
-- **Support & Complaints Dispatch Center**: Live inbox of all submitted complaints and inquiries with direct "Reply & Resolve" capabilities.
-- **System Diagnostics HUD**: Real-time monitoring of CPU cores, RAM allocation, PostgreSQL ACID connection pool health, and FastAPI AI engine uptime.
-- **Bug Tracker & Error Log**: Triage component exceptions, log resolutions, and manage runtime status.
-
-### 2. Enterprise Company & Shop Owner Portal
-- **Operational Suite**: Live KPI cards, Sales Pipeline (Deals CRM), Product Catalog, Multi-Warehouse Stock Tracking, Dual-Mode Discount Orders (`₹` / `%`), and Vector PDF Invoices with HMAC-SHA256 QR Authenticity.
-- **Universal Help & Complaint Beacon**: Floating help button available across all screens allowing clients, store managers, and admins to report technical glitches, billing questions, or stock desyncs directly to Aryan Sharma.
 
 ---
 
