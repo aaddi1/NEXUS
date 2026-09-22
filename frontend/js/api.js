@@ -26,7 +26,7 @@ async function nexusRequest(endpoint, options = {}) {
   return data;
 }
 
-const NexusAPI = {
+var NexusAPI = {
   login(email, password) {
     return nexusRequest('/auth/login', {
       method: 'POST',

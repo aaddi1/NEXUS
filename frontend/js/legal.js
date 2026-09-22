@@ -160,10 +160,14 @@ This software, its source code, user interface design, graphics, cryptographic v
           <button type="button" class="btn btn-ghost btn-sm" data-legal-open="license">Proprietary License</button>
         </div>
       </div>`;
-    settings.appendChild(block);
+    if (settings && typeof settings.appendChild === 'function') {
+      settings.appendChild(block);
+    }
   }
 
-  const observer = new MutationObserver(addLegalSettings);
-  observer.observe(document.body, { childList: true, subtree: true });
+  if (typeof MutationObserver !== 'undefined' && document.body) {
+    const observer = new MutationObserver(addLegalSettings);
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
   addLegalSettings();
 })();

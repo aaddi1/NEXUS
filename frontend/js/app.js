@@ -88,7 +88,9 @@ function avatarHtml(name, size){
 }
 
 function renderKPIs(containerId, items){
-  document.getElementById(containerId).innerHTML = items.map(k => `
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  el.innerHTML = items.map(k => `
     <div class="kpi-card">
       <div class="kpi-top"><span class="kpi-label">${k.label}</span><span class="kpi-icon">${k.icon}</span></div>
       <div class="kpi-value">${k.value}</div>
@@ -139,10 +141,13 @@ renderKPIs('analytics-kpis', [
 ]);
 
 /* dashboard tables */
-document.getElementById('dash-orders-table').innerHTML = `
-<table class="data-table"><thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Status</th><th>Date</th></tr></thead><tbody>
-${ordersData.slice(0,5).map(o=>`<tr><td><span class="cell-title">${o.id}</span></td><td>${o.cust}</td><td>${money(o.total)}</td><td>${pillHtml(o.fulfill[0].toUpperCase()+o.fulfill.slice(1), fulfillMeta[o.fulfill])}</td><td style="color:var(--text-mid);">${o.date}</td></tr>`).join('')}
-</tbody></table>`;
+const dashOrdersEl = document.getElementById('dash-orders-table');
+if (dashOrdersEl) {
+  dashOrdersEl.innerHTML = `
+  <table class="data-table"><thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Status</th><th>Date</th></tr></thead><tbody>
+  ${ordersData.slice(0,5).map(o=>`<tr><td><span class="cell-title">${o.id}</span></td><td>${o.cust}</td><td>${money(o.total)}</td><td>${pillHtml(o.fulfill[0].toUpperCase()+o.fulfill.slice(1), fulfillMeta[o.fulfill])}</td><td style="color:var(--text-mid);">${o.date}</td></tr>`).join('')}
+  </tbody></table>`;
+}
 
 const topProducts = [
   {name:'Alphonso Mango Crate', units:1240, rev:47200, pct:92},
@@ -151,16 +156,19 @@ const topProducts = [
   {name:'Desi Tamatar Box', units:610, rev:8800, pct:48},
   {name:'Filter Coffee Concentrate', units:410, rev:9800, pct:38},
 ];
-document.getElementById('dash-top-products').innerHTML = topProducts.map((p,i)=>`
-  <div class="top-product-row">
-    <div class="rank">${i+1}</div>
-    <div style="flex:1;min-width:0;">
-      <div class="tp-name">${p.name}</div>
-      <div class="tp-meta">${p.units.toLocaleString()} units sold</div>
-      <div class="tp-bar"><div class="tp-fill" style="width:${p.pct}%;"></div></div>
-    </div>
-    <div class="tp-val">${money(p.rev)}</div>
-  </div>`).join('');
+const dashTopEl = document.getElementById('dash-top-products');
+if (dashTopEl) {
+  dashTopEl.innerHTML = topProducts.map((p,i)=>`
+    <div class="top-product-row">
+      <div class="rank">${i+1}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="tp-name">${p.name}</div>
+        <div class="tp-meta">${p.units.toLocaleString()} units sold</div>
+        <div class="tp-bar"><div class="tp-fill" style="width:${p.pct}%;"></div></div>
+      </div>
+      <div class="tp-val">${money(p.rev)}</div>
+    </div>`).join('');
+}
 
 const activity = [
   {t:'Order <b>#NX-8841</b> was delivered to Riya Mehta', when:'12 min ago'},
@@ -169,21 +177,30 @@ const activity = [
   {t:'New customer <b>Neha Sharma</b> placed a first order', when:'3h ago'},
   {t:'Deal <b>Renewal — Chai Junction</b> marked closed won', when:'5h ago'},
 ];
-document.getElementById('dash-activity').innerHTML = activity.map(a=>`
-  <div class="activity-row"><div class="activity-dot"></div><div><div class="activity-text">${a.t}</div><div class="activity-time">${a.when}</div></div></div>`).join('');
+const dashActEl = document.getElementById('dash-activity');
+if (dashActEl) {
+  dashActEl.innerHTML = activity.map(a=>`
+    <div class="activity-row"><div class="activity-dot"></div><div><div class="activity-text">${a.t}</div><div class="activity-time">${a.when}</div></div></div>`).join('');
+}
 
 /* sales table */
-document.getElementById('sales-table').innerHTML = `
-<table class="data-table"><thead><tr><th>Deal</th><th>Account</th><th>Stage</th><th>Value</th><th>Owner</th><th>Close date</th></tr></thead><tbody>
-${dealsData.map(d=>`<tr><td><span class="cell-title">${d.name}</span></td><td>${d.acct}</td><td>${pillHtml(d.stage, stageMeta[d.stage])}</td><td>${money(d.value)}</td><td>${d.owner}</td><td style="color:var(--text-mid);">${d.close}</td></tr>`).join('')}
-</tbody></table>`;
+const salesTableEl = document.getElementById('sales-table');
+if (salesTableEl) {
+  salesTableEl.innerHTML = `
+  <table class="data-table"><thead><tr><th>Deal</th><th>Account</th><th>Stage</th><th>Value</th><th>Owner</th><th>Close date</th></tr></thead><tbody>
+  ${dealsData.map(d=>`<tr><td><span class="cell-title">${d.name}</span></td><td>${d.acct}</td><td>${pillHtml(d.stage, stageMeta[d.stage])}</td><td>${money(d.value)}</td><td>${d.owner}</td><td style="color:var(--text-mid);">${d.close}</td></tr>`).join('')}
+  </tbody></table>`;
+}
 
-document.getElementById('pipeline-stage').innerHTML = ['Discovery','Proposal','Negotiation','Closed won'].map(s=>{
-  const items = dealsData.filter(d=>d.stage===s);
-  const total = items.reduce((a,d)=>a+d.value,0);
-  const pct = Math.round(total/70000*100);
-  return `<div class="top-product-row"><div style="flex:1;"><div class="tp-name">${s}</div><div class="tp-meta">${items.length} deals</div><div class="tp-bar"><div class="tp-fill" style="width:${Math.min(pct,100)}%;"></div></div></div><div class="tp-val">${money(total)}</div></div>`;
-}).join('');
+const pipelineStageEl = document.getElementById('pipeline-stage');
+if (pipelineStageEl) {
+  pipelineStageEl.innerHTML = ['Discovery','Proposal','Negotiation','Closed won'].map(s=>{
+    const items = dealsData.filter(d=>d.stage===s);
+    const total = items.reduce((a,d)=>a+d.value,0);
+    const pct = Math.round(total/70000*100);
+    return `<div class="top-product-row"><div style="flex:1;"><div class="tp-name">${s}</div><div class="tp-meta">${items.length} deals</div><div class="tp-bar"><div class="tp-fill" style="width:${Math.min(pct,100)}%;"></div></div></div><div class="tp-val">${money(total)}</div></div>`;
+  }).join('');
+}
 
 
 const NX_PRODUCT_PHOTOS = {
@@ -1847,35 +1864,6 @@ function createInvoice(){
       }
     };
   }
-            product_id: i.product_id,
-            name: i.product || '',
-            sku: i.sku || '',
-            loc: i.warehouse || '',
-            onhand: Number(i.quantity) || 0,
-            reserved: 0,
-            avail: Number(i.quantity) || 0,
-            reorder: 0,
-            pct: 100,
-            updated: i.updated_at || null
-          }));
-
-          inventoryData.splice(
-            0,
-            inventoryData.length,
-            ...window.NEXUS_LIVE_INVENTORY
-          );
-
-          renderProductsTable();
-        }
-      }catch(error){
-        console.error('NEXUS stock transfer failed:', error);
-        toast(
-          'Stock transfer failed',
-          error.message || 'Unable to transfer inventory.'
-        );
-      }
-    };
-  }
 
   function addCustomer(existing=null){
     openModal(
@@ -2529,7 +2517,8 @@ function createInvoice(){
   const forgot=$('#login-form .link-muted');if(forgot){forgot.addEventListener('click',e=>{e.preventDefault();openModal('Reset password','Enter your work email to request a reset link.',formShell([field('Work email','email',DEMO_EMAIL,'email','required')]),`<button class="btn btn-ghost btn-sm" type="button" data-close-modal>Cancel</button>${primary('Send reset link')}`);$('#nx-active-form').onsubmit=e=>{e.preventDefault();closeModal();toast('Reset requested','If the account exists, a reset link would be sent.')}})}
 
   /* Apply photos to visible team/profile DP slots. */
-  Object.entries(NX_PHOTOS).forEach(([name,url])=>{
+  const allPhotos = { ...(typeof NX_PRODUCT_PHOTOS !== 'undefined' ? NX_PRODUCT_PHOTOS : {}), ...(typeof NX_CUSTOMER_PHOTOS !== 'undefined' ? NX_CUSTOMER_PHOTOS : {}) };
+  Object.entries(allPhotos).forEach(([name,url])=>{
     document.querySelectorAll('.avatar,.user-mini,.topbar-avatar,.big-av').forEach(el=>{
       const txt=(el.textContent||'').trim();
       if(txt===name || txt.includes(name)) { el.style.backgroundImage=`url("${url}")`; el.textContent=''; }

@@ -1,7 +1,7 @@
 (function(){
   function bind(){
     const b=document.getElementById('nx-password-toggle');
-    if(!b||b.dataset.bound)return;
+    if(!b||!b.parentElement||b.dataset.bound)return;
     const input=b.parentElement.querySelector('input');
     if(!input)return;
     b.dataset.bound='1';
