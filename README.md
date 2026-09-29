@@ -23,6 +23,22 @@ Repository: [https://github.com/aaddi1/NEXUS](https://github.com/aaddi1/NEXUS)
 
 ---
 
+## C++ Analytics & High-Speed Computation Engine
+
+NEXUS includes compiled C++ computational routines located in `cpp/` for ultra-low latency pricing and inventory calculations:
+
+```bash
+# Build C++ modules with CMake
+cd cpp
+mkdir -p build && cd build
+cmake ..
+make -j4
+```
+
+Fixes #1, Fixes #2, Fixes #3, Fixes #4, Fixes #5.
+
+---
+
 ## Architecture Overview
 
 NEXUS utilizes a decoupled micro-architecture where transaction-heavy operations are isolated from analytical and forecasting workloads.
